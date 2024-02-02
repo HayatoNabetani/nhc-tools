@@ -1,5 +1,5 @@
 import ToolCard from "@/features/Tool/ToolCard/ToolCard";
-import { ToolList } from "./constants/Tools";
+import { ToolList } from "@/constants/Tools";
 
 export default function Home() {
   return (

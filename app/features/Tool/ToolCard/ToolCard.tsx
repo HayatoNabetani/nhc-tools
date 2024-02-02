@@ -1,4 +1,4 @@
-import RightArrow from "@/app/components/elements/Arrow/RightArrow";
+import RightArrow from "@/components/elements/Arrow/RightArrow";
 import Link from "next/link";
 
 interface Props {
