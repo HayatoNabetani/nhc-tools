@@ -1,20 +1,21 @@
 "use client";
-
-import JsonPrettyLinter from "@/features/JsonPrettyLinter/JsonPrettyLinter";
-import JstConverter from "@/features/JstConverter/JstConverter";
+import { ToolList } from "@/constants/Tools";
 import { useParams } from "next/navigation";
-
-const ToolComponentObject: any = {
-  "1": <JstConverter />,
-  "2": <JsonPrettyLinter />,
-};
+import { Suspense } from "react";
 
 const ToolPage = () => {
   const params = useParams();
   const { toolId } = params;
+  const tool = ToolList.find((t) => t.id === parseInt(toolId as string));
   return (
     <main className="flex min-h-screen flex-col items-center lg:max-w-5xl mx-auto">
-      {ToolComponentObject[toolId as string]}
+      {tool ? (
+        <Suspense fallback={<div>Loading...</div>}>
+          <tool.Component />
+        </Suspense>
+      ) : (
+        <div>Tool not found.</div>
+      )}
     </main>
   );
 };
