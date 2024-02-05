@@ -6,7 +6,7 @@ interface Props {
 
 const CodeBlock = ({ codeString }: Props) => {
   return (
-    <div className="flex items-center justify-between text-gray-800 border border-gray-800 bg-white max-w-sm font-mono text-sm py-3 px-4 w-[250px] rounded-md">
+    <div className="flex items-center justify-between text-gray-800 border border-gray-800 bg-white max-w-sm font-mono text-sm py-3 px-4 max-w-fit rounded-md">
       <div className="flex gap-1">
         <span>{codeString}</span>
       </div>
