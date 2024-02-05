@@ -18,7 +18,6 @@ const Header = () => {
     if (pathname.includes("tool")) {
       const id = pathname.split("/")[2];
       const targetTool = ToolList.find((t) => t.id === Number(id));
-      console.log(targetTool);
       setHeaderObject(targetTool!);
     }
   }, []);
