@@ -13,7 +13,7 @@ const ToolPage = () => {
   const params = useParams();
   const { toolId } = params;
   return (
-    <main className="flex min-h-screen flex-col items-center p-24">
+    <main className="flex min-h-screen flex-col items-center lg:max-w-5xl mx-auto">
       {ToolComponentObject[toolId as string]}
     </main>
   );

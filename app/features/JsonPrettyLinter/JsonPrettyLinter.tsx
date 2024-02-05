@@ -1,60 +1,51 @@
 "use client";
 import JsonFormatter from "react-json-formatter";
+import { useState } from "react";
+import ButtonOnlyIcon from "@/components/elements/Button/ButtonOnlyIcon";
+import JsonViewer from "./components/JsonViewer/JsonViewer";
 import JsonTextArea from "./components/JsonTextArea/JsonTextArea";
+import JsonResultTextArea from "./components/JsonResultTextArea/JsonResultTextArea";
 
 const JsonPrettyLinter = () => {
-  const sample = `{
-   "string":"ABCDE",
-   "number":1,
-   "null":null,
-   "boolean":true,
-   "object":{
-      "string":"ABCDE",
-      "number":1,
-      "null":null,
-      "boolean":true
-   },
-   "array":[
-      1,
-      2,
-      3,
-      4,
-      {
-      "string":"ABCDE",
-      "number":1,
-      "null":null,
-      "boolean":true,
-         "array":[
-      1,
-      2,
-      3,
-      4,
-      {
-      "string":"ABCDE",
-      "number":1,
-      "null":null,
-      "boolean":true
-   }
-   ]
-   }
-   ]
-}
-`;
-
-  const jsonStyle = {
-    propertyStyle: { color: "red" },
-    stringStyle: { color: "green" },
-    numberStyle: { color: "darkorange" },
-  };
+  const [jsonInput, setJsonInput] = useState<string>("");
+  const [jsonError, setJsonError] = useState<string>("");
+  const [jsonPrettyLinterResult, setJsonJsonPrettyLinterResult] =
+    useState<string>("");
 
   return (
-    <div className="flex items-center justify-between w-full">
-      <div className="flex-1">
-        <JsonTextArea />
+    <div className="w-full">
+      {/* 整形部分 */}
+      <div className="flex justify-between w-full mb-10">
+        <div className="flex-1 pr-1">
+          <div>
+            <p>整形前</p>
+            <JsonTextArea
+              jsonInput={jsonInput}
+              setJsonInput={setJsonInput}
+              setJsonError={setJsonError}
+              setJsonJsonPrettyLinterResult={setJsonJsonPrettyLinterResult}
+            />
+          </div>
+        </div>
+        <div className="flex-1">
+          <div>
+            <div>構文エラー</div>
+            <div>{jsonError}</div>
+          </div>
+        </div>
+        <div className="flex-1 pl-1">
+          <div>
+            <p>
+              整形後(コピー用){" "}
+              <ButtonOnlyIcon type="copy" value={jsonPrettyLinterResult} />
+            </p>
+            {/* Linter */}
+            <JsonResultTextArea jsonResult={jsonPrettyLinterResult} />
+          </div>
+        </div>
       </div>
-      <div className="flex-1">
-        <JsonFormatter json={sample} tabWith={4} jsonStyle={jsonStyle} />
-      </div>
+      {/* ビューワー */}
+      {jsonPrettyLinterResult && <JsonViewer json={jsonPrettyLinterResult} />}
     </div>
   );
 };
