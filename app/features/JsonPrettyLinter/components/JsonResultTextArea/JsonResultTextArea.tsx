@@ -5,8 +5,8 @@ interface Props {
 }
 
 const JsonResultTextArea = ({ jsonResult }: Props) => {
-  const onC = () => {
-    console.log("a")
+  const onChange = () => {
+    console.log("cannnot Use");
   }
   return (
     <div className="w-full mb-4 border border-gray-200 rounded-lg bg-gray-50">
@@ -16,7 +16,7 @@ const JsonResultTextArea = ({ jsonResult }: Props) => {
         textAreaLabel="jsonResult"
         placeholder="jsonResult"
         value={jsonResult}
-        onChange={onC}
+        onChange={onChange}
         disabled={true}
       />
     </div>
