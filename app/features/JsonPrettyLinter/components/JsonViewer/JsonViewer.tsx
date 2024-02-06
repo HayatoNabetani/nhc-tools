@@ -1,12 +1,12 @@
 import CodeBlock from "@/components/elements/CodeBlock/CodeBlock";
 import React, { useState } from "react";
+import { toJsPath, toPythonPath } from "../../utils/convert";
 
 interface Props {
   json: string;
 }
 
 const JsonViewer = ({ json }: Props) => {
-  console.log(json);
   const [selectedPath, setSelectedPath] = useState("");
 
   // JSONオブジェクトをHTMLに変換する関数
@@ -30,24 +30,6 @@ const JsonViewer = ({ json }: Props) => {
         </div>
       );
     });
-  };
-
-  // JavaScript形式のパスに変換
-  const toJsPath = (path: string) => {
-    return path
-      .split("/")
-      .filter((p) => p !== "")
-      .map((p: any) => (isNaN(p) ? `.${p}` : `[${p}]`))
-      .join("");
-  };
-
-  // Python形式のパスに変換
-  const toPythonPath = (path: string) => {
-    return path
-      .split("/")
-      .filter((p) => p !== "")
-      .map((p: any) => (isNaN(p) ? `["${p}"]` : `[${p}]`))
-      .join("");
   };
 
   return (
