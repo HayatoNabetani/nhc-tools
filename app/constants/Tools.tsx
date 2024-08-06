@@ -1,6 +1,7 @@
 import JsonPrettyLinter from "@/features/JsonPrettyLinter/JsonPrettyLinter";
 import JstConverter from "@/features/JstConverter/JstConverter";
 import MakingArray from "@/features/MakingArray/MakingArray";
+import QueryParams from "@/features/QueryParams/QueryParams";
 
 export const ToolList: ToolSetWithComponent[] = [
   {
@@ -20,5 +21,11 @@ export const ToolList: ToolSetWithComponent[] = [
     title: "配列生成",
     content: "テキストから配列を出力する",
     Component: MakingArray,
+  },
+  {
+    id: 4,
+    title: "URL",
+    content: "クエリーパラメータ分析、URL作成",
+    Component: QueryParams,
   },
 ];

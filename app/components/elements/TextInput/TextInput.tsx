@@ -25,7 +25,7 @@ const TextInput = ({
       </label>
       <input
         id={id}
-        type="text"
+        type="search"
         placeholder={placeholder}
         value={value}
         disabled={disabled}

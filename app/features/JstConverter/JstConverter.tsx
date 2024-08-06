@@ -4,7 +4,7 @@ import {
   convertIsoToDatetime,
   convertTimestampToDatetime,
 } from "./utils/convert";
-import { isNumeric } from "@/utils/validate";
+import { isNumeric } from "@/lib/validate";
 
 const JstConverter = () => {
   const [timeInput, setTimeInput] = useState<string>("");

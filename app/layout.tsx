@@ -15,7 +15,7 @@ export default function RootLayout({
   return (
     <html lang="ja">
       <head>
-        <title>Create Next App</title>
+        <title>NHC Tools</title>
         <meta name="description" content="Description" />
       </head>
       <body className={inter.className}>
