@@ -14,8 +14,18 @@ const JsonPrettyLinter = () => {
 
   return (
     <div className="w-full">
+      {jsonInput && jsonError && (
+        <div className="w-full">
+          <div className="flex-1">
+            <div>
+              <div>構文エラー</div>
+              <div>{jsonError}</div>
+            </div>
+          </div>
+        </div>
+      )}
       {/* 整形部分 */}
-      <div className="flex justify-between w-full mb-10">
+      <div className="flex justify-between w-full mb-3">
         <div className="flex-1 pr-1">
           <div>
             <p>整形前</p>
@@ -25,12 +35,6 @@ const JsonPrettyLinter = () => {
               setJsonError={setJsonError}
               setJsonJsonPrettyLinterResult={setJsonJsonPrettyLinterResult}
             />
-          </div>
-        </div>
-        <div className="flex-1">
-          <div>
-            <div>構文エラー</div>
-            <div>{jsonError}</div>
           </div>
         </div>
         <div className="flex-1 pl-1">

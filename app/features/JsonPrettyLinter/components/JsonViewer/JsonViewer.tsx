@@ -33,26 +33,24 @@ const JsonViewer = ({ json }: Props) => {
   };
 
   return (
-    <div className="flex items-center justify-between w-full">
-      <div className="w-1/2">
-        <div className="max-h-screen overflow-auto px-4 py-2 border rounded-lg border-black">
-          <pre>{renderJson(JSON.parse(json))}</pre>
-        </div>
+    <div>
+      <div className="w-full mx-auto flex justify-between items-center">
+        {selectedPath && (
+          <>
+            <div className="flex-1">
+              Selected Path (JavaScript): <br />
+              <CodeBlock codeString={toJsPath(selectedPath)} />
+            </div>
+            <div className="flex-1">
+              Selected Path (Python): <br />
+              <CodeBlock codeString={toPythonPath(selectedPath)} />
+            </div>
+          </>
+        )}
       </div>
-      <div className="w-1/2">
-        <div className="w-full mx-auto p-12">
-          {selectedPath && (
-            <>
-              <p className="mb-10">
-                Selected Path (JavaScript): <br />
-                <CodeBlock codeString={toJsPath(selectedPath)} />
-              </p>
-              <p>
-                Selected Path (Python): <br />
-                <CodeBlock codeString={toPythonPath(selectedPath)} />
-              </p>
-            </>
-          )}
+      <div className="flex items-center justify-between w-full">
+        <div className="max-h-screen overflow-auto px-4 py-2 border rounded-lg border-black">
+          <pre className="text-xs">{renderJson(JSON.parse(json))}</pre>
         </div>
       </div>
     </div>

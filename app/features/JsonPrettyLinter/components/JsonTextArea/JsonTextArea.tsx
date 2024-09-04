@@ -1,6 +1,5 @@
-import Button from "@/components/elements/Button/Button";
-import ButtonOnlyIcon from "@/components/elements/Button/ButtonOnlyIcon";
 import TextArea from "@/components/elements/TextArea/TextArea";
+import JSON5 from "json5";
 
 interface Props {
   jsonInput: string;
@@ -19,9 +18,14 @@ const JsonTextArea = ({
    * jsonを整形する関数
    */
   const handleJsonFormatAndLint = (inputString: string) => {
-    setJsonInput(inputString);
+    setJsonInput(
+      inputString
+        .replace(/: None/g, ": null")
+        .replace(/: False/g, ": false")
+        .replace(/: True/g, ": true")
+    );
     try {
-      const formattedJson = JSON.stringify(JSON.parse(inputString), null, 2);
+      const formattedJson = JSON.stringify(JSON5.parse(inputString), null, 2);
       setJsonJsonPrettyLinterResult(formattedJson);
       setJsonError(`正しいJSON形式です!`);
     } catch (error) {
