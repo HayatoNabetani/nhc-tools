@@ -6,6 +6,7 @@ import { createArrayString } from "./utils/convert";
 const MakingArray = () => {
   const [arrayInput, setArrayInput] = useState<string>("");
   const [arrayResult, setArrayResult] = useState<string>("");
+  const [tupleResult, setTupleResult] = useState<string>("");
 
   const handleArrayTextAreaChange = (inputString: string) => {
     setArrayInput(inputString);
@@ -17,6 +18,9 @@ const MakingArray = () => {
     const arrayFromSplit = inputString.split(regex);
     setArrayResult(createArrayString(arrayFromSplit));
     // setArrayResult(JSON.stringify(arrayFromSplit, null, 4));
+    // SQLのIN演算子用のタプル文字列を作成
+    const tupleString = `(${arrayFromSplit.map(item => `'${item.trim()}'`).join(', ')})`;
+    setTupleResult(tupleString);
   };
 
   return (
@@ -47,6 +51,23 @@ const MakingArray = () => {
               textAreaLabel="arrayResultTextArea"
               placeholder="ここに配列出力"
               value={arrayResult}
+              disabled={true}
+              onChange={handleArrayTextAreaChange}
+            />
+          </div>
+        </div>
+        <div className="flex-1 pl-1">
+          <div>
+            <p>
+              タプル(コピー用){" "}
+              <ButtonOnlyIcon type="copy" value={tupleResult} />
+            </p>
+            {/* Linter */}
+            <TextArea
+              id="arrayResultTextArea"
+              textAreaLabel="arrayResultTextArea"
+              placeholder="ここにタプル出力"
+              value={tupleResult}
               disabled={true}
               onChange={handleArrayTextAreaChange}
             />
