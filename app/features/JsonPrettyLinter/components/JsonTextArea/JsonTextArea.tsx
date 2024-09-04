@@ -18,12 +18,12 @@ const JsonTextArea = ({
    * jsonを整形する関数
    */
   const handleJsonFormatAndLint = (inputString: string) => {
-    setJsonInput(
-      inputString
-        .replace(/: None/g, ": null")
-        .replace(/: False/g, ": false")
-        .replace(/: True/g, ": true")
-    );
+    inputString = inputString
+      .replace(/(\b\d+\b)(?=\s*:)/g, '"$1"')
+      .replace(/None/g, "null")
+      .replace(/False/g, "false")
+      .replace(/True/g, "true");
+    setJsonInput(inputString);
     try {
       const formattedJson = JSON.stringify(JSON5.parse(inputString), null, 2);
       setJsonJsonPrettyLinterResult(formattedJson);
