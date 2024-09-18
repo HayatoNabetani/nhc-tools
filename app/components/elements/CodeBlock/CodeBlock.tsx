@@ -6,7 +6,7 @@ interface Props {
 
 const CodeBlock = ({ codeString }: Props) => {
   return (
-    <div className="flex items-center justify-between text-gray-800 border border-gray-800 bg-white max-w-sm font-mono text-sm py-3 px-4 rounded-md">
+    <div className="copyString flex items-center justify-between text-gray-800 border border-gray-800 bg-white max-w-sm font-mono text-sm py-3 px-4 rounded-md">
       <div className="flex gap-1 overflow-x-auto">
         <span>{codeString}</span>
       </div>

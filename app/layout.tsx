@@ -1,7 +1,7 @@
 "use client";
 
 import { RecoilRoot } from "recoil";
-import { GoogleAnalytics } from "@next/third-parties/google";
+import { GoogleAnalytics, GoogleTagManager } from "@next/third-parties/google";
 import { Inter } from "next/font/google";
 import "./globals.css";
 import Header from "@/components/layouts/Header/Header";
@@ -19,6 +19,7 @@ export default function RootLayout({
         <title>NHC Tools</title>
         <meta name="description" content="Description" />
         <GoogleAnalytics gaId={process.env.NEXT_PUBLIC_GA_ID || ""} />
+        <GoogleTagManager gtmId={process.env.NEXT_PUBLIC_GTM_ID || ""} />
       </head>
       <body className={inter.className}>
         <RecoilRoot>

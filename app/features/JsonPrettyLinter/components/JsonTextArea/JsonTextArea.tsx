@@ -27,7 +27,7 @@ const JsonTextArea = ({
     try {
       const formattedJson = JSON.stringify(JSON5.parse(inputString), null, 2);
       setJsonJsonPrettyLinterResult(formattedJson);
-      setJsonError(`正しいJSON形式です!`);
+      setJsonError("");
     } catch (error) {
       setJsonJsonPrettyLinterResult("");
       setJsonError(`${error}`);
