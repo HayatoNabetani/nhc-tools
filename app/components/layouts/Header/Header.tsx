@@ -20,7 +20,7 @@ const Header = () => {
       const targetTool = ToolList.find((t) => t.id === Number(id));
       setHeaderObject(targetTool!);
     }
-  }, []);
+  }, [pathname, setHeaderObject]);
 
   return (
     <header>

@@ -1,10 +1,10 @@
 "use client";
 
 import { RecoilRoot } from "recoil";
+import { GoogleAnalytics } from "@next/third-parties/google";
 import { Inter } from "next/font/google";
 import "./globals.css";
 import Header from "@/components/layouts/Header/Header";
-import GoogleAnalytics from "./features/GoogleAnalytics/GoogleAnalytics";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -18,7 +18,7 @@ export default function RootLayout({
       <head>
         <title>NHC Tools</title>
         <meta name="description" content="Description" />
-        <GoogleAnalytics />
+        <GoogleAnalytics gaId={process.env.NEXT_PUBLIC_GA_ID || ""} />
       </head>
       <body className={inter.className}>
         <RecoilRoot>
