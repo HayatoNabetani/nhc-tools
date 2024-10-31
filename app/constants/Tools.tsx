@@ -1,6 +1,7 @@
 import JsonPrettyLinter from "@/features/JsonPrettyLinter/JsonPrettyLinter";
 import JstConverter from "@/features/JstConverter/JstConverter";
 import MakingArray from "@/features/MakingArray/MakingArray";
+import MakingDictArray from "@/features/MakingDictArray/MakingDictArray";
 import QueryParams from "@/features/QueryParams/QueryParams";
 
 export const ToolList: ToolSetWithComponent[] = [
@@ -27,5 +28,11 @@ export const ToolList: ToolSetWithComponent[] = [
     title: "URL",
     content: "クエリーパラメータ分析、URL作成",
     Component: QueryParams,
+  },
+  {
+    id: 5,
+    title: "辞書配列メーカー",
+    content: "キーバリュー必要な分だけ作成します",
+    Component: MakingDictArray,
   },
 ];

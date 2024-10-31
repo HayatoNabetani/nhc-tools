@@ -1,7 +1,7 @@
 import ButtonOnlyIcon from "@/components/elements/Button/ButtonOnlyIcon";
 import TextArea from "@/components/elements/TextArea/TextArea";
 import { useState } from "react";
-import { createArrayString } from "./utils/convert";
+import { createArrayString } from "@/lib/convert";
 
 const MakingArray = () => {
   const [arrayInput, setArrayInput] = useState<string>("");
