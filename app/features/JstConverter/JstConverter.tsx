@@ -3,6 +3,7 @@ import { useState } from "react";
 import {
   convertIsoToDatetime,
   convertTimestampToDatetime,
+  convertUtcToJpDatetime,
 } from "./utils/convert";
 import { isNumeric } from "@/lib/validate";
 
@@ -10,26 +11,44 @@ const JstConverter = () => {
   const [timeInput, setTimeInput] = useState<string>("");
   const [jstResult, setJstResult] = useState<string>("");
 
+  // メイン処理
+  const convertToJST = (value: string) => {
+    try {
+      if (!value) throw new Error("入力が空です。");
+
+      // ISO形式 (yyyy-MM-ddTHH:mm:ss.sssZ)
+      if (value.includes("T")) {
+        return convertIsoToDatetime(value);
+      }
+
+      // タイムスタンプ
+      if (isNumeric(value)) {
+        return convertTimestampToDatetime(Number(value));
+      }
+
+      // UTC形式 (yyyy-MM-dd HH:mm:ss.sss+00)
+      if (
+        value.includes("+00") ||
+        value.includes("UTC") ||
+        value.includes("Z")
+      ) {
+        return convertUtcToJpDatetime(value);
+      }
+
+      return "対応していない日付形式です。";
+    } catch (e) {
+      console.error("日付変換エラー:", e);
+      return "対応していない日付形式です。";
+    }
+  };
+
   const handleJstConvert = (value: string) => {
     setTimeInput(value);
     if (!value) {
       setJstResult("");
       return;
     }
-    try {
-      if (value.includes("T")) {
-        setJstResult(convertIsoToDatetime(value));
-      } else {
-        if (isNumeric(value)) {
-          setJstResult(convertTimestampToDatetime(Number(value)));
-        } else {
-          setJstResult("対応していない日付形式です。");
-        }
-      }
-    } catch (e) {
-      console.log(e);
-      setJstResult("対応していない日付形式です。");
-    }
+    setJstResult(convertToJST(value));
   };
 
   return (
