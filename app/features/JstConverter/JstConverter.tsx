@@ -1,25 +1,8 @@
 import TextInput from "@/components/elements/TextInput/TextInput";
-import { useState } from "react";
+import { useConvert } from "./hooks/useConvert";
 
-import { handleConvert } from "./utils/convert";
 const JstConverter = () => {
-  const [timeInput, setTimeInput] = useState<string>("");
-  const [jstResult, setJstResult] = useState<string>("");
-
-  const handleJstConvert = (value: string) => {
-    setTimeInput(value);
-    if (!value) {
-      setJstResult("");
-      return;
-    }
-
-    try {
-      setJstResult(handleConvert(value));
-    } catch (e) {
-      console.error("日付変換エラー:", e);
-      setJstResult("対応していない日付形式です。");
-    }
-  };
+  const { timeInput, jstResult, handleJstConvert } = useConvert();
 
   return (
     <div className="flex items-center justify-center w-full">
