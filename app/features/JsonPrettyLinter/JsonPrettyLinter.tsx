@@ -24,29 +24,21 @@ const JsonPrettyLinter = () => {
           </div>
         </div>
       ) : (
-        <div>正しいJSON形式です</div>
+        <div>
+          正しいJSON形式です
+          <ButtonOnlyIcon type="copy" value={jsonPrettyLinterResult} />
+        </div>
       )}
       {/* 整形部分 */}
       <div className="flex justify-between w-full mb-3">
         <div className="flex-1 pr-1">
           <div>
-            <p>整形前</p>
             <JsonTextArea
               jsonInput={jsonInput}
               setJsonInput={setJsonInput}
               setJsonError={setJsonError}
               setJsonJsonPrettyLinterResult={setJsonJsonPrettyLinterResult}
             />
-          </div>
-        </div>
-        <div className="flex-1 pl-1">
-          <div>
-            <p>
-              整形後(コピー用){" "}
-              <ButtonOnlyIcon type="copy" value={jsonPrettyLinterResult} />
-            </p>
-            {/* Linter */}
-            <JsonResultTextArea jsonResult={jsonPrettyLinterResult} />
           </div>
         </div>
       </div>
