@@ -9,7 +9,7 @@ const ButtonOnlyIcon = ({ type, value }: Props) => {
   return (
     <button
       type="button"
-      className="inline-flex justify-center items-center p-1 text-gray-500 rounded cursor-pointer hover:text-gray-900 hover:bg-gray-100"
+      className="buttonOnlyIcon inline-flex justify-center items-center p-1 text-gray-500 rounded cursor-pointer hover:text-gray-900 hover:bg-gray-100"
       onClick={() =>
         value ? ICONS[type].functions(value) : ICONS[type].functions()
       }
