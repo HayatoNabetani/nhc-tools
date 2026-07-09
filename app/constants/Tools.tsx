@@ -1,3 +1,4 @@
+import BackgroundRemover from "@/features/BackgroundRemover/BackgroundRemover";
 import JsonPrettyLinter from "@/features/JsonPrettyLinter/JsonPrettyLinter";
 import JstConverter from "@/features/JstConverter/JstConverter";
 import MakingArray from "@/features/MakingArray/MakingArray";
@@ -34,5 +35,11 @@ export const ToolList: ToolSetWithComponent[] = [
     title: "辞書配列メーカー",
     content: "キーバリュー必要な分だけ作成します",
     Component: MakingDictArray,
+  },
+  {
+    id: 6,
+    title: "背景透過切り抜き",
+    content: "写真から被写体を切り抜いて透過PNGにします",
+    Component: BackgroundRemover,
   },
 ];
