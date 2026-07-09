@@ -1,11 +1,12 @@
 import TextArea from "@/components/elements/TextArea/TextArea";
 import TextInput from "@/components/elements/TextInput/TextInput";
+import { KeyValueInputs } from "../utils/convert";
 
 interface Props {
-  keyValueInputs: any;
+  keyValueInputs: KeyValueInputs;
   keyInput: string;
-  valueInput: string;
-  createResult: (newKeyValueInputs: any) => void;
+  valueInput: string[];
+  createResult: (newKeyValueInputs: KeyValueInputs) => void;
 }
 
 const KeyValueCard = ({
@@ -15,12 +16,8 @@ const KeyValueCard = ({
   createResult,
 }: Props) => {
   const handleKeyChange = (value: string) => {
-    // これだと順番が変わる
-    // const { [keyInput]: _, ...rest } = keyValueInputs;
-    // const newKeyValueInputs = {
-    //   ...rest,
-    //   [value]: valueInput,
-    // };
+    // スプレッド構文でキーを差し替えると順番が変わってしまうため、
+    // エントリを組み直してキー名だけ置き換える
     const newKeyValueInputs = Object.fromEntries(
       Object.entries(keyValueInputs).map(([key, val]) =>
         key === keyInput ? [value, valueInput] : [key, val]
@@ -30,34 +27,30 @@ const KeyValueCard = ({
   };
 
   const handleValueChange = (value: string) => {
-    const regex = /[,;\t \n]+/;
-    const arrayFromSplit = value.split(regex);
-    const newKeyValueInputs = {
+    const arrayFromSplit = value.split(/[,;\t \n]+/);
+    createResult({
       ...keyValueInputs,
       [keyInput]: arrayFromSplit,
-    };
-    createResult(newKeyValueInputs);
+    });
   };
 
   return (
     <div>
       <div>
         <TextInput
-          id={keyInput}
-          textAreaLabel={"キー"}
-          placeholder={"キーを入力"}
+          id={`key-${keyInput}`}
+          textAreaLabel="キー"
+          placeholder="キーを入力"
           value={keyInput}
-          disabled={false}
           onChange={handleKeyChange}
         />
       </div>
       <div>
         <TextArea
-          id={valueInput}
-          textAreaLabel={"値"}
-          placeholder={"値を入力"}
-          value={valueInput}
-          disabled={false}
+          id={`value-${keyInput}`}
+          textAreaLabel="値"
+          placeholder="値を入力"
+          value={valueInput.join(",")}
           onChange={handleValueChange}
         />
       </div>

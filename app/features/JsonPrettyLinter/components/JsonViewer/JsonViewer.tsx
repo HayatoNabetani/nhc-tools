@@ -1,5 +1,5 @@
 import CodeBlock from "@/components/elements/CodeBlock/CodeBlock";
-import React, { useState } from "react";
+import { useMemo, useState } from "react";
 import { toJsPath, toPythonPath } from "../../utils/convert";
 
 interface Props {
@@ -10,6 +10,15 @@ const JsonViewer = ({ json }: Props) => {
   const [selectedPath, setSelectedPath] = useState("");
   const [collapsedPaths, setCollapsedPaths] = useState<Set<string>>(new Set());
   const [truncateLongStrings, setTruncateLongStrings] = useState(false);
+
+  // JSONのパースはjsonが変わったときだけ行う
+  const parsedJson = useMemo(() => {
+    try {
+      return JSON.parse(json);
+    } catch {
+      return null;
+    }
+  }, [json]);
 
   // 折り畳み状態をトグルする関数
   const toggleCollapse = (path: string) => {
@@ -26,26 +35,22 @@ const JsonViewer = ({ json }: Props) => {
 
   // 選択されたパスの値を取得する関数
   const getSelectedValue = (path: string) => {
-    try {
-      const pathParts = path.split("/").filter((part) => part !== "");
-      let current = JSON.parse(json);
+    const pathParts = path.split("/").filter((part) => part !== "");
+    let current = parsedJson;
 
-      for (const part of pathParts) {
-        if (current && typeof current === "object") {
-          current = current[part];
-        } else {
-          return null;
-        }
+    for (const part of pathParts) {
+      if (current && typeof current === "object") {
+        current = current[part];
+      } else {
+        return null;
       }
-
-      return current;
-    } catch (error) {
-      return null;
     }
+
+    return current;
   };
 
   // 長い文字列を短縮表示する関数
-  const truncateString = (value: any): string => {
+  const truncateString = (value: unknown): string => {
     if (typeof value !== "string") {
       return JSON.stringify(value);
     }
@@ -61,8 +66,8 @@ const JsonViewer = ({ json }: Props) => {
   };
 
   // JSONオブジェクトをHTMLに変換する関数
-  const renderJson = (obj: any, parentPath = "") => {
-    return Object.entries(obj).map(([key, value], index) => {
+  const renderJson = (obj: object, parentPath = "") => {
+    return Object.entries(obj).map(([key, value]) => {
       const path = `${parentPath}/${key}`;
       const isCollapsed = collapsedPaths.has(path);
 
@@ -92,9 +97,7 @@ const JsonViewer = ({ json }: Props) => {
               </span>
             </div>
             {!isCollapsed && (
-              <div style={{ marginLeft: "20px" }}>
-                {renderJson(value, path)}
-              </div>
+              <div className="ml-5">{renderJson(value, path)}</div>
             )}
           </div>
         );
@@ -120,6 +123,10 @@ const JsonViewer = ({ json }: Props) => {
       );
     });
   };
+
+  if (parsedJson === null || typeof parsedJson !== "object") {
+    return null;
+  }
 
   return (
     <div>
@@ -165,9 +172,7 @@ const JsonViewer = ({ json }: Props) => {
       )}
       <div className="flex items-center justify-between w-full">
         <div className="max-h-screen overflow-auto px-4 py-2 border rounded-lg border-black bg-white">
-          <div className="text-xs font-mono">
-            {renderJson(JSON.parse(json))}
-          </div>
+          <div className="text-xs font-mono">{renderJson(parsedJson)}</div>
         </div>
       </div>
     </div>

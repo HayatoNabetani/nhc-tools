@@ -3,8 +3,8 @@ interface Props {
   textAreaLabel: string;
   placeholder: string;
   value: string;
-  disabled: boolean;
-  onChange: (value: string) => void;
+  disabled?: boolean;
+  onChange?: (value: string) => void;
 }
 
 const TextArea = ({
@@ -12,7 +12,7 @@ const TextArea = ({
   textAreaLabel,
   placeholder,
   value,
-  disabled,
+  disabled = false,
   onChange,
 }: Props) => {
   return (
@@ -27,7 +27,8 @@ const TextArea = ({
         placeholder={placeholder}
         value={value}
         disabled={disabled}
-        onChange={(e) => onChange(e.target.value)}
+        readOnly={!onChange}
+        onChange={(e) => onChange?.(e.target.value)}
       ></textarea>
     </div>
   );

@@ -1,7 +1,6 @@
 import ButtonOnlyIcon from "@/components/elements/Button/ButtonOnlyIcon";
-import TextArea from "@/components/elements/TextArea/TextArea";
 import TextInput from "@/components/elements/TextInput/TextInput";
-import { useCallback, useState } from "react";
+import { useMemo, useState } from "react";
 import {
   Table,
   TableBody,
@@ -20,95 +19,90 @@ interface UrlObject {
   searchParams: Record<string, string>;
 }
 
+// 二重エンコードされた値でも表示できるように、失敗したら元の値を返す
+const safeDecode = (value: string): string => {
+  try {
+    return decodeURIComponent(value);
+  } catch {
+    return value;
+  }
+};
+
 /**
- * http://localhost:8888/api/v1/items?to_date=2024-08-03&interval=2&app_id=6%2C7%2C1%2C2%2C3%2C4%2C5%2C8%2C9%2C10&genre_id=51%2C40%2C294%2C112%2C18&sort=streaming_period-desc%2Ccost-desc&media_type=video&version=1&transition_type_id=1%2C2%2C3&keyword=in%253A%25E3%2583%2580%25E3%2582%25A4%25E3%2582%25A8%25E3%2583%2583%25E3%2583%2588&next=streaming_period%3D98%26cost%3D8183808%26item_id%3D901261
- * のようなURLからドメインとそれぞれのクエリーパラメータを見やすく表示し、新しいURLも作成できる機能
- * @returns
+ * http://localhost:8888/api/v1/items?to_date=2024-08-03&interval=2&app_id=6%2C7 のような
+ * URLからドメインとそれぞれのクエリーパラメータを見やすく表示し、新しいURLも作成できる機能
  */
 const QueryParams = () => {
   // 分析するURL
   const [url, setUrl] = useState<string>("");
 
   // 分析URLのそれぞれの部分
-  const [urlObject, setUrlObject] = useState<UrlObject | {}>({});
+  const [urlObject, setUrlObject] = useState<UrlObject | null>(null);
 
   // クエリーパラメータを自分で選択して、作成するURL
   const [newUrl, setNewUrl] = useState<string>("");
+
+  // 作成中URLに採用済みのクエリーキー
+  const adoptedKeys = useMemo(() => {
+    if (!newUrl) return new Set<string>();
+    try {
+      return new Set(new URL(newUrl).searchParams.keys());
+    } catch {
+      return new Set<string>();
+    }
+  }, [newUrl]);
 
   const handleSetUrl = (inputUrl: string) => {
     setUrl(inputUrl);
     try {
       const parsedUrl = new URL(inputUrl);
-      const queryParams: Record<string, string> = {};
-      parsedUrl.searchParams.forEach((value: string, key: string) => {
-        queryParams[key] = value;
-      });
       setUrlObject({
         protocol: parsedUrl.protocol,
         host: parsedUrl.host,
         pathname: parsedUrl.pathname,
-        searchParams: queryParams,
+        searchParams: Object.fromEntries(parsedUrl.searchParams),
       });
-    } catch (error) {
-      console.error("URL解析エラー:", error);
-      setUrlObject({});
+    } catch {
+      // 入力途中のURLは解析できないので無視する
+      setUrlObject(null);
     }
   };
 
-  const createNewUrl = (targetKey: string) => {
-    if (
-      urlObject &&
-      "protocol" in urlObject &&
-      "host" in urlObject &&
-      "pathname" in urlObject &&
-      "searchParams" in urlObject
-    ) {
-      const newQueryParams: Record<string, string> = {};
-      if (newUrl) {
-        const parsedNewUrl = new URL(newUrl);
-        parsedNewUrl.searchParams.forEach((value: string, key: string) => {
-          newQueryParams[key] = value;
-        });
-        const newSearchParams = new URLSearchParams(newQueryParams);
-        if (newSearchParams.has(targetKey)) {
-          newSearchParams.delete(targetKey);
-        } else {
-          const value = urlObject.searchParams[targetKey];
-          if (value) {
-            newSearchParams.set(targetKey, value);
-          }
-        }
-        const newUrlString = `${urlObject.protocol}//${urlObject.host}${
-          urlObject.pathname
-        }?${newSearchParams.toString()}`;
-        setNewUrl(newUrlString);
-      } else {
-        const nowSearchParams = new URLSearchParams(urlObject.searchParams);
-        const value: any = nowSearchParams.get(targetKey);
-        newQueryParams[targetKey] = value;
-        const newSearchParams = new URLSearchParams(newQueryParams);
-        const newUrlString = `${urlObject.protocol}//${urlObject.host}${
-          urlObject.pathname
-        }?${newSearchParams.toString()}`;
-        setNewUrl(newUrlString);
+  // 対象キーを新URLへ採用/不採用でトグルする
+  const toggleQueryParam = (targetKey: string) => {
+    if (!urlObject) return;
+
+    const params = newUrl
+      ? new URL(newUrl).searchParams
+      : new URLSearchParams();
+
+    if (params.has(targetKey)) {
+      params.delete(targetKey);
+    } else {
+      const value = urlObject.searchParams[targetKey];
+      if (value !== undefined) {
+        params.set(targetKey, value);
       }
     }
+
+    setNewUrl(
+      `${urlObject.protocol}//${urlObject.host}${
+        urlObject.pathname
+      }?${params.toString()}`
+    );
   };
 
   return (
     <div className="w-full">
       <div className="flex flex-col justify-between w-full mb-10">
         <div>
-          <div>
-            <TextInput
-              id="inputUrl"
-              textAreaLabel=""
-              placeholder="ここにURLを入力"
-              value={url}
-              disabled={false}
-              onChange={handleSetUrl}
-            />
-          </div>
+          <TextInput
+            id="inputUrl"
+            textAreaLabel=""
+            placeholder="ここにURLを入力"
+            value={url}
+            onChange={handleSetUrl}
+          />
         </div>
         <div>
           <Table>
@@ -121,7 +115,7 @@ const QueryParams = () => {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {"searchParams" in urlObject &&
+              {urlObject &&
                 Object.entries(urlObject.searchParams).map(([key, value]) => (
                   <TableRow key={key}>
                     <TableCell className="font-medium">
@@ -129,20 +123,13 @@ const QueryParams = () => {
                       <ButtonOnlyIcon type="copy" value={key} />
                     </TableCell>
                     <TableCell>
-                      {decodeURIComponent(value)}
-                      <ButtonOnlyIcon
-                        type="copy"
-                        value={decodeURIComponent(value)}
-                      />
+                      {safeDecode(value)}
+                      <ButtonOnlyIcon type="copy" value={safeDecode(value)} />
                     </TableCell>
                     <TableCell className="text-right">
                       <Button
-                        text={
-                          newUrl && new URL(newUrl).searchParams.has(key)
-                            ? "不採用"
-                            : "採用!!"
-                        }
-                        handleClick={() => createNewUrl(key)}
+                        text={adoptedKeys.has(key) ? "不採用" : "採用!!"}
+                        handleClick={() => toggleQueryParam(key)}
                       />
                     </TableCell>
                   </TableRow>
@@ -151,16 +138,13 @@ const QueryParams = () => {
           </Table>
         </div>
         <div>
-          <div>
-            <TextInput
-              id="inputNewUrl"
-              textAreaLabel=""
-              placeholder="作成後のURL"
-              value={newUrl}
-              disabled={true}
-              onChange={setNewUrl}
-            />
-          </div>
+          <TextInput
+            id="inputNewUrl"
+            textAreaLabel=""
+            placeholder="作成後のURL"
+            value={newUrl}
+            disabled={true}
+          />
         </div>
       </div>
     </div>

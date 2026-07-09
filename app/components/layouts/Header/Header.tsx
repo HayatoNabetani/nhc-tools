@@ -17,24 +17,27 @@ const Header = () => {
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const searchRef = useRef<HTMLDivElement>(null);
 
-  // リロードした際にタイトルが初期値に戻ってしまわないようにする
+  // リロードや戻る操作の際にタイトルが表示中のページとずれないようにする
   useEffect(() => {
-    if (pathname.includes("tool")) {
-      const id = pathname.split("/")[2];
-      const targetTool = ToolList.find((t) => t.id === Number(id));
-      setHeaderObject(targetTool!);
+    if (pathname.startsWith("/tool/")) {
+      const id = Number(pathname.split("/")[2]);
+      const targetTool = ToolList.find((t) => t.id === id);
+      setHeaderObject(targetTool ?? DefaultHeader);
+    } else {
+      setHeaderObject(DefaultHeader);
     }
   }, [pathname, setHeaderObject]);
 
   // 検索結果をフィルタリング
+  const lowerQuery = searchQuery.toLowerCase();
   const filteredTools = ToolList.filter(
     (tool) =>
-      tool.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      tool.content.toLowerCase().includes(searchQuery.toLowerCase())
+      tool.title.toLowerCase().includes(lowerQuery) ||
+      tool.content.toLowerCase().includes(lowerQuery)
   );
 
   // ツール選択時のハンドラー
-  const handleToolSelect = (tool: any) => {
+  const handleToolSelect = (tool: ToolSetWithComponent) => {
     setHeaderObject(tool);
     router.push(`/tool/${tool.id}`);
     setSearchQuery("");

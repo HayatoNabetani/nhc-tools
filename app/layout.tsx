@@ -1,12 +1,16 @@
-"use client";
-
-import { RecoilRoot } from "recoil";
+import type { Metadata } from "next";
 import { GoogleAnalytics, GoogleTagManager } from "@next/third-parties/google";
 import { Inter } from "next/font/google";
 import "./globals.css";
 import Header from "@/components/layouts/Header/Header";
+import Providers from "./providers";
 
 const inter = Inter({ subsets: ["latin"] });
+
+export const metadata: Metadata = {
+  title: "NHC Tools",
+  description: "俺流Webツール集",
+};
 
 export default function RootLayout({
   children,
@@ -15,18 +19,18 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="ja">
-      <head>
-        <title>NHC Tools</title>
-        <meta name="description" content="Description" />
-        <GoogleAnalytics gaId={process.env.NEXT_PUBLIC_GA_ID || ""} />
-        <GoogleTagManager gtmId={process.env.NEXT_PUBLIC_GTM_ID || ""} />
-      </head>
       <body className={inter.className}>
-        <RecoilRoot>
+        <Providers>
           <Header />
           {children}
-        </RecoilRoot>
+        </Providers>
       </body>
+      {process.env.NEXT_PUBLIC_GA_ID && (
+        <GoogleAnalytics gaId={process.env.NEXT_PUBLIC_GA_ID} />
+      )}
+      {process.env.NEXT_PUBLIC_GTM_ID && (
+        <GoogleTagManager gtmId={process.env.NEXT_PUBLIC_GTM_ID} />
+      )}
     </html>
   );
 }

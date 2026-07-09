@@ -1,18 +1,23 @@
 import { HiClipboardCopy } from "react-icons/hi";
 import { MdAttachFile } from "react-icons/md";
 
-export const ICONS: any = {
+interface IconDef {
+  onClick: (value?: string) => void;
+  icon: JSX.Element;
+}
+
+export const ICONS = {
   file: {
-    functions: () => {
-      console.log("a");
-    },
-    components: <MdAttachFile />,
+    onClick: () => {},
+    icon: <MdAttachFile />,
   },
   copy: {
-    functions: (value: string) => {
+    onClick: (value?: string) => {
       if (!value) return;
       navigator.clipboard.writeText(value);
     },
-    components: <HiClipboardCopy width={15} height={15} />,
+    icon: <HiClipboardCopy width={15} height={15} />,
   },
-};
+} satisfies Record<string, IconDef>;
+
+export type IconType = keyof typeof ICONS;

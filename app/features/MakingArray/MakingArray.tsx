@@ -3,155 +3,112 @@ import TextArea from "@/components/elements/TextArea/TextArea";
 import { useState, useMemo } from "react";
 import { createArrayString } from "@/lib/convert";
 
+const SEPARATOR_REGEX = /[,;\t \n]+/;
+
+// SQLのIN演算子用のタプル文字列を作成
+const createTupleString = (items: string[]) =>
+  `(${items.map((item) => `'${item}'`).join(", ")})`;
+
+// スプレッドシートに列で貼り付けられる形にする
+const createSpreadsheetString = (items: string[]) => items.join("\n");
+
+const buildOutputs = (items: string[], idPrefix: string, labelPrefix: string) => [
+  {
+    id: `${idPrefix}ArrayResultTextArea`,
+    label: `${labelPrefix}配列(コピー用)`,
+    placeholder: "ここに配列出力",
+    value: items.length > 0 ? createArrayString(items) : "",
+  },
+  {
+    id: `${idPrefix}TupleResultTextArea`,
+    label: `${labelPrefix}タプル(コピー用)`,
+    placeholder: "ここにタプル出力",
+    value: items.length > 0 ? createTupleString(items) : "",
+  },
+  {
+    id: `${idPrefix}SheetResultTextArea`,
+    label: `${labelPrefix}スプレッドシート用(コピー用)`,
+    placeholder: "ここに出力",
+    value: items.length > 0 ? createSpreadsheetString(items) : "",
+  },
+];
+
 const MakingArray = () => {
   const [arrayInput, setArrayInput] = useState<string>("");
-  const [arrayResult, setArrayResult] = useState<string>("");
-  const [tupleResult, setTupleResult] = useState<string>("");
-  const [spreadsheetResult, setSpreadsheetResult] = useState<string>("");
+
+  // 入力を区切り文字で分割した要素一覧
+  const items = useMemo(
+    () =>
+      arrayInput
+        .split(SEPARATOR_REGEX)
+        .map((item) => item.trim())
+        .filter(Boolean),
+    [arrayInput]
+  );
 
   // 重複要素を検出
   const duplicateItems = useMemo(() => {
-    if (!arrayInput) return [];
-    const regex = /[,;\t \n]+/;
-    const arrayFromSplit = arrayInput.split(regex).map((item) => item.trim());
     const seen = new Set<string>();
     const duplicates = new Set<string>();
-
-    arrayFromSplit.forEach((item) => {
-      if (item && seen.has(item)) {
+    items.forEach((item) => {
+      if (seen.has(item)) {
         duplicates.add(item);
-      } else if (item) {
+      } else {
         seen.add(item);
       }
     });
-
     return Array.from(duplicates);
-  }, [arrayInput]);
+  }, [items]);
 
-  // 重複削除後の配列を生成
-  const uniqueArray = useMemo(() => {
-    if (!arrayInput) return [];
-    const regex = /[,;\t \n]+/;
-    const arrayFromSplit = arrayInput.split(regex).map((item) => item.trim());
-    const seen = new Set<string>();
-    return arrayFromSplit.filter((item) => {
-      if (!item) return false;
-      if (seen.has(item)) {
-        return false;
-      }
-      seen.add(item);
-      return true;
-    });
-  }, [arrayInput]);
+  // 重複削除後の配列
+  const uniqueItems = useMemo(() => Array.from(new Set(items)), [items]);
 
-  // 重複削除後の結果を生成
-  const uniqueArrayResult = useMemo(() => {
-    if (uniqueArray.length === 0) return "";
-    return createArrayString(uniqueArray);
-  }, [uniqueArray]);
-
-  const uniqueTupleResult = useMemo(() => {
-    if (uniqueArray.length === 0) return "";
-    return `(${uniqueArray.map((item) => `'${item}'`).join(", ")})`;
-  }, [uniqueArray]);
-
-  const uniqueSpreadsheetResult = useMemo(() => {
-    if (uniqueArray.length === 0) return "";
-    return uniqueArray.join("\n");
-  }, [uniqueArray]);
-
-  const handleArrayTextAreaChange = (inputString: string) => {
-    setArrayInput(inputString);
-    if (!inputString) {
-      setArrayResult("");
-      setTupleResult("");
-      setSpreadsheetResult("");
-      return;
-    }
-    const regex = /[,;\t \n]+/;
-    const arrayFromSplit = inputString.split(regex);
-    setArrayResult(createArrayString(arrayFromSplit));
-
-    // SQLのIN演算子用のタプル文字列を作成
-    const tupleString = `(${arrayFromSplit
-      .map((item) => `'${item.trim()}'`)
-      .join(", ")})`;
-    setTupleResult(tupleString);
-
-    // スプレッドシートに列で貼り付けれるような形にする
-    const spreadsheetString = arrayFromSplit
-      .map((item) => item.trim())
-      .join("\n");
-    setSpreadsheetResult(spreadsheetString);
-  };
+  const outputs = useMemo(() => buildOutputs(items, "", ""), [items]);
+  const uniqueOutputs = useMemo(
+    () => buildOutputs(uniqueItems, "unique", "重複削除後の"),
+    [uniqueItems]
+  );
 
   return (
     <div className="w-full">
+      {/* 配列の長さ表示 */}
+      <div className="flex items-center gap-2 mb-4">
+        <span className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm font-medium">
+          配列の長さ: {items.length}
+        </span>
+        {duplicateItems.length > 0 && (
+          <span className="px-3 py-1 bg-yellow-100 text-yellow-800 rounded-full text-sm font-medium">
+            重複削除後: {uniqueItems.length}
+          </span>
+        )}
+      </div>
+
       {/* 整形部分 */}
       <div className="flex justify-between w-full mb-10">
         <div className="flex-1 pr-1">
-          <div>
-            <p>ここに文字列を入力(対応区切り文字,)</p>
-            <TextArea
-              id="arrayTextArea"
-              textAreaLabel="arrayTextArea"
-              placeholder="ここに文字列を入力"
-              value={arrayInput}
-              disabled={false}
-              onChange={handleArrayTextAreaChange}
-            />
-          </div>
+          <p>ここに文字列を入力(対応区切り文字,)</p>
+          <TextArea
+            id="arrayTextArea"
+            textAreaLabel="arrayTextArea"
+            placeholder="ここに文字列を入力"
+            value={arrayInput}
+            onChange={setArrayInput}
+          />
         </div>
-        <div className="flex-1 pl-1">
-          <div>
+        {outputs.map((output) => (
+          <div key={output.id} className="flex-1 pl-1">
             <p>
-              配列(コピー用) <ButtonOnlyIcon type="copy" value={arrayResult} />
+              {output.label} <ButtonOnlyIcon type="copy" value={output.value} />
             </p>
-            {/* Linter */}
             <TextArea
-              id="arrayResultTextArea"
-              textAreaLabel="arrayResultTextArea"
-              placeholder="ここに配列出力"
-              value={arrayResult}
+              id={output.id}
+              textAreaLabel={output.id}
+              placeholder={output.placeholder}
+              value={output.value}
               disabled={true}
-              onChange={handleArrayTextAreaChange}
             />
           </div>
-        </div>
-        <div className="flex-1 pl-1">
-          <div>
-            <p>
-              タプル(コピー用){" "}
-              <ButtonOnlyIcon type="copy" value={tupleResult} />
-            </p>
-            {/* Linter */}
-            <TextArea
-              id="tupleResultTextArea"
-              textAreaLabel="tupleResultTextArea"
-              placeholder="ここにタプル出力"
-              value={tupleResult}
-              disabled={true}
-              onChange={handleArrayTextAreaChange}
-            />
-          </div>
-        </div>
-        <div className="flex-1 pl-1">
-          <div>
-            <p>
-              スプレッドシートに列で貼り付けれるような形にする(コピー用){" "}
-              <ButtonOnlyIcon type="copy" value={spreadsheetResult} />
-            </p>
-            {/* Linter */}
-            <TextArea
-              id="sheetResultTextArea"
-              textAreaLabel="sheetResultTextArea"
-              placeholder="ここに出力"
-              value={spreadsheetResult}
-              disabled={true}
-              onChange={handleArrayTextAreaChange}
-            />
-          </div>
-        </div>
+        ))}
       </div>
 
       {/* 重複要素の表示と重複削除後の結果 */}
@@ -162,9 +119,9 @@ const MakingArray = () => {
               重複要素が検出されました:
             </p>
             <div className="flex flex-wrap gap-2">
-              {duplicateItems.map((item, index) => (
+              {duplicateItems.map((item) => (
                 <span
-                  key={index}
+                  key={item}
                   className="px-3 py-1 bg-yellow-200 text-yellow-900 rounded-full text-sm"
                 >
                   {item}
@@ -174,54 +131,24 @@ const MakingArray = () => {
           </div>
 
           <div className="flex justify-between w-full">
-            <div className="flex-1 pr-1">
-              <div>
+            {uniqueOutputs.map((output, index) => (
+              <div
+                key={output.id}
+                className={`flex-1 ${index === 0 ? "pr-1" : "pl-1"}`}
+              >
                 <p>
-                  重複削除後の配列(コピー用){" "}
-                  <ButtonOnlyIcon type="copy" value={uniqueArrayResult} />
+                  {output.label}{" "}
+                  <ButtonOnlyIcon type="copy" value={output.value} />
                 </p>
                 <TextArea
-                  id="uniqueArrayResultTextArea"
-                  textAreaLabel="uniqueArrayResultTextArea"
-                  placeholder="ここに重複削除後の配列出力"
-                  value={uniqueArrayResult}
+                  id={output.id}
+                  textAreaLabel={output.id}
+                  placeholder={`ここに${output.label.replace("(コピー用)", "")}出力`}
+                  value={output.value}
                   disabled={true}
-                  onChange={() => {}}
                 />
               </div>
-            </div>
-            <div className="flex-1 pl-1">
-              <div>
-                <p>
-                  重複削除後のタプル(コピー用){" "}
-                  <ButtonOnlyIcon type="copy" value={uniqueTupleResult} />
-                </p>
-                <TextArea
-                  id="uniqueTupleResultTextArea"
-                  textAreaLabel="uniqueTupleResultTextArea"
-                  placeholder="ここに重複削除後のタプル出力"
-                  value={uniqueTupleResult}
-                  disabled={true}
-                  onChange={() => {}}
-                />
-              </div>
-            </div>
-            <div className="flex-1 pl-1">
-              <div>
-                <p>
-                  重複削除後のスプレッドシート用(コピー用){" "}
-                  <ButtonOnlyIcon type="copy" value={uniqueSpreadsheetResult} />
-                </p>
-                <TextArea
-                  id="uniqueSheetResultTextArea"
-                  textAreaLabel="uniqueSheetResultTextArea"
-                  placeholder="ここに重複削除後の出力"
-                  value={uniqueSpreadsheetResult}
-                  disabled={true}
-                  onChange={() => {}}
-                />
-              </div>
-            </div>
+            ))}
           </div>
         </div>
       )}

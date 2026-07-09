@@ -1,6 +1,64 @@
 import { isNumeric } from "@/lib/validate";
-import { addHours, format, parseISO } from "date-fns";
-import { ja } from "date-fns/locale";
+
+// 元号ごとの元年の前年（元号N年 = 前年 + N）
+const ERA_BASE_YEARS: Record<string, number> = {
+  令和: 2018,
+  平成: 1988,
+  昭和: 1925,
+  大正: 1911,
+  明治: 1867,
+};
+
+const ENGLISH_MONTHS = [
+  "jan",
+  "feb",
+  "mar",
+  "apr",
+  "may",
+  "jun",
+  "jul",
+  "aug",
+  "sep",
+  "oct",
+  "nov",
+  "dec",
+];
+
+/**
+ * Dateを日本時間の yyyy-MM-dd HH:mm:ss(.SSS) に整形する共通関数
+ * 実行環境のタイムゾーンに依存せず Asia/Tokyo で整形する
+ */
+const formatJSTDate = (date: Date, withMillis = false): string => {
+  if (isNaN(date.getTime())) {
+    throw new Error("無効な日付です");
+  }
+
+  const parts = new Intl.DateTimeFormat("ja-JP", {
+    timeZone: "Asia/Tokyo",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    hourCycle: "h23",
+  }).formatToParts(date);
+
+  const get = (type: Intl.DateTimeFormatPartTypes) =>
+    parts.find((part) => part.type === type)?.value ?? "";
+
+  const formatted = `${get("year")}-${get("month")}-${get("day")} ${get(
+    "hour"
+  )}:${get("minute")}:${get("second")}`;
+
+  if (!withMillis) return formatted;
+  return `${formatted}.${String(date.getMilliseconds()).padStart(3, "0")}`;
+};
+
+// 日本時間の0時0分0秒を表すDateを生成する（実行環境のタイムゾーンに依存しない）
+const jstMidnight = (year: number, month: number, day: number): Date => {
+  return new Date(Date.UTC(year, month - 1, day) - 9 * 60 * 60 * 1000);
+};
 
 /**
  * iso → yyyy-MM-dd HH:mm:ss
@@ -8,85 +66,48 @@ import { ja } from "date-fns/locale";
  * @returns フォーマットされた日付文字
  */
 export const convertIsoToDatetime = (isoFormatStr: string): string => {
-  return format(new Date(isoFormatStr), "yyyy-MM-dd HH:mm:ss", { locale: ja });
+  return formatJSTDate(new Date(isoFormatStr));
 };
 
 /**
- * タイムスタンプ(1707362911) → yyyy-MM-dd HH:mm:ss
- * @param timestamp タイムスタンプ形式の日付文字列
+ * タイムスタンプ(秒: 1707362911 / ミリ秒: 1707362911000) → yyyy-MM-dd HH:mm:ss
+ * @param timestamp タイムスタンプ
  * @returns フォーマットされた日付文字
  */
 export const convertTimestampToDatetime = (timestamp: number): string => {
-  return format(new Date(timestamp * 1000), "yyyy-MM-dd HH:mm:ss", {
-    locale: ja,
-  });
+  // 12桁以下は秒とみなしてミリ秒へ変換する
+  const millis = timestamp < 1e12 ? timestamp * 1000 : timestamp;
+  return formatJSTDate(new Date(millis));
 };
 
 /**
- * UTC → yyyy/MM/dd HH:mm:ss.SSS
+ * UTC/GMT明示の日付文字列 → yyyy-MM-dd HH:mm:ss.SSS (JST)
  * @param utcStr UTCの文字列
  * @returns フォーマットされた日付文字
  */
 export const convertUtcToJpDatetime = (utcStr: string): string => {
-  // UTCの文字列
-  const date = parseISO(utcStr);
-
-  // UTCから日本時間へは+9時間
-  const jpTime = addHours(date, 9);
-
-  // フォーマット
-  const formattedTime = format(jpTime, "yyyy/MM/dd HH:mm:ss.SSS", {
-    locale: ja,
-  });
-
-  return formattedTime;
+  return formatJSTDate(new Date(utcStr), true);
 };
 
 // 標準的な日付形式（YYYY/MM/DD or YYYY-MM-DD）をJSTに変換
 const convertStandardDateToJST = (dateStr: string): string => {
-  // スラッシュとハイフンの両方に対応
-  const normalizedStr = dateStr.replace(/-/g, "/");
-  // 時間部分がない場合は日本時間の0時0分0秒を追加
-  const dateWithTime = `${normalizedStr} 00:00:00`;
-  const date = new Date(dateWithTime);
-  return formatJSTDate(date);
+  const [year, month, day] = dateStr.split(/[/-]/).map(Number);
+  return formatJSTDate(jstMidnight(year, month, day));
 };
 
-// 日本語形式の日付をJSTに変換
+// 日本語形式（元号あり/なし）の日付をJSTに変換
 const convertJapaneseFormatToJST = (dateStr: string): string => {
-  let year, month, day;
-
-  // 元号対応
-  if (dateStr.includes("令和")) {
-    const match = dateStr.match(/令和(\d+)年(\d+)月(\d+)日/);
-    if (match) {
-      year = 2018 + parseInt(match[1], 10); // 令和元年は2019年
-      month = parseInt(match[2], 10);
-      day = parseInt(match[3], 10);
-    }
-  } else if (dateStr.includes("平成")) {
-    const match = dateStr.match(/平成(\d+)年(\d+)月(\d+)日/);
-    if (match) {
-      year = 1988 + parseInt(match[1], 10); // 平成元年は1989年
-      month = parseInt(match[2], 10);
-      day = parseInt(match[3], 10);
-    }
-  } else {
-    // 西暦表記
-    const match = dateStr.match(/(\d+)年(\d+)月(\d+)日/);
-    if (match) {
-      year = parseInt(match[1], 10);
-      month = parseInt(match[2], 10);
-      day = parseInt(match[3], 10);
-    }
+  const match = dateStr.match(/(令和|平成|昭和|大正|明治)?(\d+)年(\d+)月(\d+)日/);
+  if (!match) {
+    throw new Error("日本語日付形式の解析に失敗しました");
   }
 
-  if (year && month && day) {
-    const date = new Date(year, month - 1, day);
-    return formatJSTDate(date);
-  }
+  const [, era, yearStr, monthStr, dayStr] = match;
+  const year = era
+    ? ERA_BASE_YEARS[era] + parseInt(yearStr, 10)
+    : parseInt(yearStr, 10);
 
-  throw new Error("日本語日付形式の解析に失敗しました");
+  return formatJSTDate(jstMidnight(year, parseInt(monthStr, 10), parseInt(dayStr, 10)));
 };
 
 // 英語形式の日付をJSTに変換
@@ -102,62 +123,42 @@ const convertEnglishFormatToJST = (dateStr: string): string => {
 // 相対的な時間表現をJSTに変換
 const convertRelativeDateToJST = (dateStr: string): string => {
   const now = new Date();
+  const target = new Date(now);
 
-  if (dateStr === "昨日") {
-    const yesterday = new Date(now);
-    yesterday.setDate(now.getDate() - 1);
-    return formatJSTDate(yesterday);
-  } else if (dateStr === "明日") {
-    const tomorrow = new Date(now);
-    tomorrow.setDate(now.getDate() + 1);
-    return formatJSTDate(tomorrow);
-  } else if (dateStr === "一昨日") {
-    const dayBeforeYesterday = new Date(now);
-    dayBeforeYesterday.setDate(now.getDate() - 2);
-    return formatJSTDate(dayBeforeYesterday);
-  } else if (dateStr === "明後日") {
-    const dayAfterTomorrow = new Date(now);
-    dayAfterTomorrow.setDate(now.getDate() + 2);
-    return formatJSTDate(dayAfterTomorrow);
+  const fixedDayOffsets: Record<string, number> = {
+    一昨日: -2,
+    昨日: -1,
+    明日: 1,
+    明後日: 2,
+  };
+
+  if (dateStr in fixedDayOffsets) {
+    target.setDate(now.getDate() + fixedDayOffsets[dateStr]);
+    return formatJSTDate(target);
   }
 
-  // N日前/後の処理
-  const daysMatch = dateStr.match(/(\d+)日(前|後)/);
-  if (daysMatch) {
-    const days = parseInt(daysMatch[1], 10);
-    const direction = daysMatch[2] === "前" ? -1 : 1;
-    const targetDate = new Date(now);
-    targetDate.setDate(now.getDate() + days * direction);
-    return formatJSTDate(targetDate);
-  }
+  // N日前/後、N時間前/後、N分前/後の処理
+  const relativeMatch = dateStr.match(/(\d+)(日|時間|分)(前|後)/);
+  if (relativeMatch) {
+    const amount = parseInt(relativeMatch[1], 10);
+    const direction = relativeMatch[3] === "前" ? -1 : 1;
+    const offset = amount * direction;
 
-  // N時間前/後の処理
-  const hoursMatch = dateStr.match(/(\d+)時間(前|後)/);
-  if (hoursMatch) {
-    const hours = parseInt(hoursMatch[1], 10);
-    const direction = hoursMatch[2] === "前" ? -1 : 1;
-    const targetDate = new Date(now);
-    targetDate.setHours(now.getHours() + hours * direction);
-    return formatJSTDate(targetDate);
+    switch (relativeMatch[2]) {
+      case "日":
+        target.setDate(now.getDate() + offset);
+        break;
+      case "時間":
+        target.setHours(now.getHours() + offset);
+        break;
+      case "分":
+        target.setMinutes(now.getMinutes() + offset);
+        break;
+    }
+    return formatJSTDate(target);
   }
 
   throw new Error("相対日付形式の解析に失敗しました");
-};
-
-// 日付を日本時間のフォーマットに整形する共通関数
-const formatJSTDate = (date: Date): string => {
-  const options: Intl.DateTimeFormatOptions = {
-    timeZone: "Asia/Tokyo",
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit",
-    second: "2-digit",
-    hour12: false,
-  };
-
-  return new Intl.DateTimeFormat("ja-JP", options).format(date);
 };
 
 export const handleConvert = (value: string) => {
@@ -168,20 +169,19 @@ export const handleConvert = (value: string) => {
 
   // === ISO形式 (yyyy-MM-ddTHH:mm:ss.sssZ) ===
   if (
-    /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(.\d+)?(Z|[+-]\d{2}:\d{2})?$/.test(
+    /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d+)?(Z|[+-]\d{2}:\d{2})?$/.test(
       trimmedValue
     )
   ) {
     return convertIsoToDatetime(trimmedValue);
   }
 
-  // === タイムスタンプ (秒またはミリ秒) ===
-  if (isNumeric(trimmedValue)) {
-    const num = Number(trimmedValue);
-    // Unix秒 (10桁) またはミリ秒 (13桁) を区別
-    if (trimmedValue.length === 10 || trimmedValue.length === 13) {
-      return convertTimestampToDatetime(num);
-    }
+  // === タイムスタンプ (秒: 10桁 / ミリ秒: 13桁) ===
+  if (
+    isNumeric(trimmedValue) &&
+    (trimmedValue.length === 10 || trimmedValue.length === 13)
+  ) {
+    return convertTimestampToDatetime(Number(trimmedValue));
   }
 
   // === UTC/GMT明示形式 ===
@@ -200,49 +200,24 @@ export const handleConvert = (value: string) => {
   }
 
   // === 日本語形式 (令和5年10月1日、2023年10月1日など) ===
-  if (
-    /^(令和|平成|昭和|大正|明治)?\d+年\d+月\d+日/.test(trimmedValue) ||
-    /^\d+年\d+月\d+日/.test(trimmedValue)
-  ) {
+  if (/^(令和|平成|昭和|大正|明治)?\d+年\d+月\d+日/.test(trimmedValue)) {
     return convertJapaneseFormatToJST(trimmedValue);
   }
 
   // === 英語形式 (Oct 1, 2023、1st October 2023など) ===
-  const englishMonths = [
-    "jan",
-    "feb",
-    "mar",
-    "apr",
-    "may",
-    "jun",
-    "jul",
-    "aug",
-    "sep",
-    "oct",
-    "nov",
-    "dec",
-  ];
-  const hasEnglishMonth = englishMonths.some((month) =>
-    trimmedValue.toLowerCase().includes(month)
-  );
-
-  if (hasEnglishMonth) {
+  const lowerValue = trimmedValue.toLowerCase();
+  if (ENGLISH_MONTHS.some((month) => lowerValue.includes(month))) {
     return convertEnglishFormatToJST(trimmedValue);
   }
 
   // === 相対的な時間表現 (「昨日」「明日」「3日前」など) ===
-  if (
-    /昨日|一昨日|明日|明後日|\d+日(前|後)|\d+時間(前|後)|\d+分(前|後)/.test(
-      trimmedValue
-    )
-  ) {
+  if (/昨日|一昨日|明日|明後日|\d+(日|時間|分)(前|後)/.test(trimmedValue)) {
     return convertRelativeDateToJST(trimmedValue);
   }
 
   // 入力の日付形式が認識できない場合は、標準のDateコンストラクタで試行
   const date = new Date(trimmedValue);
   if (!isNaN(date.getTime())) {
-    // 有効な日付に変換できた場合
     return formatJSTDate(date);
   }
 

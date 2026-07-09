@@ -3,8 +3,8 @@ interface Props {
   textAreaLabel: string;
   placeholder: string;
   value: string;
-  disabled: boolean;
-  onChange: (value: string) => void;
+  disabled?: boolean;
+  onChange?: (value: string) => void;
 }
 
 const TextInput = ({
@@ -12,7 +12,7 @@ const TextInput = ({
   textAreaLabel,
   placeholder,
   value,
-  disabled,
+  disabled = false,
   onChange,
 }: Props) => {
   return (
@@ -29,8 +29,9 @@ const TextInput = ({
         placeholder={placeholder}
         value={value}
         disabled={disabled}
+        readOnly={!onChange}
         className="block w-full p-4 text-gray-900 border border-gray-300 rounded-lg bg-gray-50 sm:text-md focus:ring-blue-500 focus:border-blue-500"
-        onChange={(e) => onChange(e.target.value)}
+        onChange={(e) => onChange?.(e.target.value)}
       />
     </div>
   );

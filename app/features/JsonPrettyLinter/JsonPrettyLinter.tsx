@@ -1,10 +1,8 @@
 "use client";
-import JsonFormatter from "react-json-formatter";
 import { useState } from "react";
 import ButtonOnlyIcon from "@/components/elements/Button/ButtonOnlyIcon";
 import JsonViewer from "./components/JsonViewer/JsonViewer";
 import JsonTextArea from "./components/JsonTextArea/JsonTextArea";
-import JsonResultTextArea from "./components/JsonResultTextArea/JsonResultTextArea";
 
 const JsonPrettyLinter = () => {
   const [jsonInput, setJsonInput] = useState<string>("");
@@ -14,21 +12,18 @@ const JsonPrettyLinter = () => {
 
   return (
     <div className="w-full">
-      {jsonInput && jsonError ? (
-        <div className="w-full">
-          <div className="flex-1">
-            <div>
-              <div>構文エラー</div>
-              <div>{jsonError}</div>
-            </div>
+      {jsonInput &&
+        (jsonError ? (
+          <div className="w-full">
+            <div>構文エラー</div>
+            <div>{jsonError}</div>
           </div>
-        </div>
-      ) : (
-        <div>
-          正しいJSON形式です
-          <ButtonOnlyIcon type="copy" value={jsonPrettyLinterResult} />
-        </div>
-      )}
+        ) : (
+          <div>
+            正しいJSON形式です
+            <ButtonOnlyIcon type="copy" value={jsonPrettyLinterResult} />
+          </div>
+        ))}
       {/* 整形部分 */}
       <div className="flex justify-between w-full mb-3">
         <div className="flex-1 pr-1">

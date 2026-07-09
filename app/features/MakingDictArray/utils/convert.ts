@@ -1,12 +1,16 @@
-export const transformToObjectsWithCycle = (input: any) => {
+export type KeyValueInputs = Record<string, string[]>;
+
+export const transformToObjectsWithCycle = (
+  input: KeyValueInputs
+): Record<string, string>[] => {
   const keys = Object.keys(input);
+  if (keys.length === 0) return [];
 
   // 最初のキーの配列の長さを基準にする
-  const firstKey = keys[0];
-  const baseLength = input[firstKey].length;
+  const baseLength = input[keys[0]].length;
 
   return Array.from({ length: baseLength }, (_, index) => {
-    const obj: any = {};
+    const obj: Record<string, string> = {};
 
     // 全てのキーに対して処理
     keys.forEach((key) => {
