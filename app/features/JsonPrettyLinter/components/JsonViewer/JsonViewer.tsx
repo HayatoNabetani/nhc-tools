@@ -1,15 +1,25 @@
 import CodeBlock from "@/components/elements/CodeBlock/CodeBlock";
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { toJsPath, toPythonPath } from "../../utils/convert";
 
 interface Props {
   json: string;
 }
 
+interface Selection {
+  path: string;
+  // ツリーコンテナのコンテンツ座標系でのポップオーバー表示位置
+  x: number;
+  y: number;
+}
+
+const POPOVER_WIDTH = 384; // w-96
+
 const JsonViewer = ({ json }: Props) => {
-  const [selectedPath, setSelectedPath] = useState("");
+  const [selection, setSelection] = useState<Selection | null>(null);
   const [collapsedPaths, setCollapsedPaths] = useState<Set<string>>(new Set());
   const [truncateLongStrings, setTruncateLongStrings] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
 
   // JSONのパースはjsonが変わったときだけ行う
   const parsedJson = useMemo(() => {
@@ -30,6 +40,25 @@ const JsonViewer = ({ json }: Props) => {
         newSet.add(path);
       }
       return newSet;
+    });
+  };
+
+  // ダブルクリックした位置の近くにポップオーバーを表示する
+  const handleSelect = (path: string, e: React.MouseEvent) => {
+    const container = containerRef.current;
+    if (!container) return;
+
+    const rect = container.getBoundingClientRect();
+    // コンテナ内スクロールを考慮したコンテンツ座標へ変換
+    const clickX = e.clientX - rect.left + container.scrollLeft;
+    const clickY = e.clientY - rect.top + container.scrollTop;
+
+    // 右端にはみ出す場合は左へ寄せる
+    const maxX = container.scrollLeft + container.clientWidth - POPOVER_WIDTH - 8;
+    setSelection({
+      path,
+      x: Math.max(8, Math.min(clickX, maxX)),
+      y: clickY + 20,
     });
   };
 
@@ -88,7 +117,7 @@ const JsonViewer = ({ json }: Props) => {
               </span>
               <span
                 className="font-medium text-blue-600"
-                onDoubleClick={() => setSelectedPath(path)}
+                onDoubleClick={(e) => handleSelect(path, e)}
               >
                 {key}:
               </span>
@@ -108,13 +137,13 @@ const JsonViewer = ({ json }: Props) => {
             <span className="mr-4 text-gray-400">•</span>
             <span
               className="font-medium text-green-600"
-              onDoubleClick={() => setSelectedPath(path)}
+              onDoubleClick={(e) => handleSelect(path, e)}
             >
               {key}:
             </span>
             <span
               className="ml-2 text-gray-700"
-              onDoubleClick={() => setSelectedPath(path)}
+              onDoubleClick={(e) => handleSelect(path, e)}
             >
               {truncateString(value)}
             </span>
@@ -130,8 +159,11 @@ const JsonViewer = ({ json }: Props) => {
 
   return (
     <div>
-      {/* 長い文字列短縮表示のトグルボタン */}
-      <div className="mb-4 flex justify-end">
+      {/* 操作説明と長い文字列短縮表示のトグルボタン */}
+      <div className="mb-4 flex justify-between items-center">
+        <p className="text-sm text-gray-500">
+          キーや値をダブルクリックすると、その場にパスと値を表示します
+        </p>
         <button
           onClick={() => setTruncateLongStrings(!truncateLongStrings)}
           className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
@@ -144,36 +176,52 @@ const JsonViewer = ({ json }: Props) => {
         </button>
       </div>
 
-      {selectedPath && (
-        <div className="w-full mx-auto mb-4">
-          <div className="flex justify-between items-start gap-4">
-            <div className="flex-1">
-              <div className="mb-2">
+      {/* JSONツリー（ダブルクリック位置にポップオーバー表示） */}
+      <div
+        ref={containerRef}
+        className="relative w-full max-h-screen overflow-auto px-4 py-2 border rounded-lg border-black bg-white"
+      >
+        <div className="text-xs font-mono">{renderJson(parsedJson)}</div>
+
+        {selection && (
+          <div
+            className="absolute z-10 w-96 p-4 border border-gray-300 rounded-lg bg-white shadow-xl"
+            style={{ left: selection.x, top: selection.y }}
+          >
+            <div className="flex justify-between items-center mb-3">
+              <span className="text-sm font-medium text-gray-700">詳細</span>
+              <button
+                onClick={() => setSelection(null)}
+                className="px-2 text-gray-400 hover:text-gray-700 text-lg leading-none"
+                aria-label="閉じる"
+              >
+                ×
+              </button>
+            </div>
+            <div className="flex flex-col gap-3 text-sm">
+              <div>
                 Selected Path (JavaScript): <br />
-                <CodeBlock codeString={toJsPath(selectedPath)} />
+                <CodeBlock codeString={toJsPath(selection.path)} />
               </div>
               <div>
                 Selected Path (Python): <br />
-                <CodeBlock codeString={toPythonPath(selectedPath)} />
+                <CodeBlock codeString={toPythonPath(selection.path)} />
+              </div>
+              <div>
+                Selected Value: <br />
+                <div className="max-h-64 overflow-auto">
+                  <CodeBlock
+                    codeString={JSON.stringify(
+                      getSelectedValue(selection.path),
+                      null,
+                      2
+                    )}
+                  />
+                </div>
               </div>
             </div>
-            <div className="flex-1">
-              Selected Value: <br />
-              <CodeBlock
-                codeString={JSON.stringify(
-                  getSelectedValue(selectedPath),
-                  null,
-                  2
-                )}
-              />
-            </div>
           </div>
-        </div>
-      )}
-      <div className="flex items-center justify-between w-full">
-        <div className="max-h-screen overflow-auto px-4 py-2 border rounded-lg border-black bg-white">
-          <div className="text-xs font-mono">{renderJson(parsedJson)}</div>
-        </div>
+        )}
       </div>
     </div>
   );
