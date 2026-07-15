@@ -1,4 +1,5 @@
 import BackgroundRemover from "@/features/BackgroundRemover/BackgroundRemover";
+import GoogleMapPhoto from "@/features/GoogleMapPhoto/GoogleMapPhoto";
 import JsonPrettyLinter from "@/features/JsonPrettyLinter/JsonPrettyLinter";
 import JstConverter from "@/features/JstConverter/JstConverter";
 import MakingArray from "@/features/MakingArray/MakingArray";
@@ -41,5 +42,11 @@ export const ToolList: ToolSetWithComponent[] = [
     title: "背景透過切り抜き",
     content: "写真から被写体を切り抜いて透過PNGにします",
     Component: BackgroundRemover,
+  },
+  {
+    id: 7,
+    title: "Googleマップ写真抽出",
+    content: "場所URLから写真の画像URLを取り出してダウンロードします",
+    Component: GoogleMapPhoto,
   },
 ];
