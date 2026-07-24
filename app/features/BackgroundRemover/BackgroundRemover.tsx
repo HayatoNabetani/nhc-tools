@@ -1,10 +1,34 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import RegionSelector from "./components/RegionSelector";
 import { splitSubjects } from "./utils/splitSubjects";
+import { downscaleImage } from "./utils/downscaleImage";
+
+// 推論に渡す画像の長辺上限。大きすぎる画像による低速化・メモリ不足を防ぐ
+const MAX_WORK_DIMENSION = 2048;
 
 interface SubjectPart {
   url: string;
   blob: Blob;
+}
+
+// 過去に確定した処理状態。サムネイルから元画像・結果ごと復元できる
+interface HistoryEntry {
+  id: number;
+  label: string;
+  originalBlob: Blob;
+  resultBlob: Blob | null;
+  highQuality: boolean;
+  thumbUrl: string;
+}
+
+// 履歴の最大保持数（超えた分は古いものから破棄）
+const MAX_HISTORY = 12;
+
+interface ProcessOptions {
+  useHighQuality?: boolean;
+  label?: string;
+  // 指定すると新規追加ではなく該当履歴の結果を差し替える（高精度モード切替時など）
+  replaceId?: number;
 }
 
 type Status = "idle" | "processing" | "done" | "error";
@@ -41,11 +65,71 @@ const BackgroundRemover = () => {
   const [copiedPartIndex, setCopiedPartIndex] = useState(-1);
   const [highQuality, setHighQuality] = useState(false);
   const [mergeDistance, setMergeDistance] = useState(10);
+  const [history, setHistory] = useState<HistoryEntry[]>([]);
+  const [currentId, setCurrentId] = useState<number | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   // 高精度モード切り替え時に再処理できるよう、直近の入力画像を保持する
   const lastInputRef = useRef<Blob | null>(null);
   // 現在の結果に対して分割を実行済みか（結合距離変更時の自動再分割に使う）
   const hasSplitRef = useRef(false);
+  // 履歴のID採番用カウンタ
+  const idCounter = useRef(0);
+  // アンマウント時に確実にオブジェクトURLを解放するための最新値参照
+  const historyRef = useRef<HistoryEntry[]>([]);
+  const bigUrlsRef = useRef({ original: "", result: "" });
+
+  useEffect(() => {
+    historyRef.current = history;
+  }, [history]);
+  useEffect(() => {
+    bigUrlsRef.current = { original: originalUrl, result: resultUrl };
+  }, [originalUrl, resultUrl]);
+
+  // 履歴に新しい状態を追加する
+  const pushHistory = useCallback(
+    (
+      originalBlob: Blob,
+      resultBlob: Blob | null,
+      isHighQuality: boolean,
+      label: string
+    ) => {
+      const id = ++idCounter.current;
+      const thumbUrl = URL.createObjectURL(resultBlob ?? originalBlob);
+      setHistory((prev) => {
+        const next = [
+          ...prev,
+          { id, label, originalBlob, resultBlob, highQuality: isHighQuality, thumbUrl },
+        ];
+        // 上限を超えたら古いものから解放して破棄
+        while (next.length > MAX_HISTORY) {
+          const removed = next.shift();
+          if (removed) URL.revokeObjectURL(removed.thumbUrl);
+        }
+        return next;
+      });
+      setCurrentId(id);
+    },
+    []
+  );
+
+  // 既存の履歴の結果を差し替える（高精度モード切替時など）
+  const updateHistoryEntry = useCallback(
+    (id: number, resultBlob: Blob, isHighQuality: boolean) => {
+      setHistory((prev) =>
+        prev.map((entry) => {
+          if (entry.id !== id) return entry;
+          URL.revokeObjectURL(entry.thumbUrl);
+          return {
+            ...entry,
+            resultBlob,
+            highQuality: isHighQuality,
+            thumbUrl: URL.createObjectURL(resultBlob),
+          };
+        })
+      );
+    },
+    []
+  );
 
   // 分割結果をクリアしてオブジェクトURLを解放する
   const clearParts = useCallback(() => {
@@ -59,7 +143,13 @@ const BackgroundRemover = () => {
   }, []);
 
   const processFile = useCallback(
-    async (file: Blob, useHighQuality: boolean = highQuality) => {
+    async (file: Blob, options: ProcessOptions = {}) => {
+      const {
+        useHighQuality = highQuality,
+        label = "アップロード",
+        replaceId,
+      } = options;
+
       if (!file.type.startsWith("image/")) {
         setErrorMessage("画像ファイルを選択してください");
         setStatus("error");
@@ -77,11 +167,24 @@ const BackgroundRemover = () => {
       setErrorMessage("");
       clearParts();
       setStatus("processing");
-      setProgressText("準備中...");
+      setProgressText("画像を準備中...");
 
       try {
+        // 大きすぎる画像は縮小してから推論に渡す（速度・メモリ対策）
+        const input = await downscaleImage(file, MAX_WORK_DIMENSION);
+
+        setProgressText(
+          "モデルを読み込み中...（初回のみ、数十MBのダウンロードに少し時間がかかります）"
+        );
+
         // ライブラリ(数MB)は初回実行時のみ読み込む
         const { removeBackground } = await loadBackgroundRemoval();
+
+        setProgressText(
+          useHighQuality
+            ? "被写体を切り抜き中...（高精度モード）"
+            : "被写体を切り抜き中..."
+        );
 
         const baseConfig: RemovalConfig = {
           progress: (key, current, total) => {
@@ -106,7 +209,7 @@ const BackgroundRemover = () => {
           // フル精度モデルを使用し、WebGPUが使えるならGPUで推論する
           const useGpu = "gpu" in navigator;
           try {
-            blob = await removeBackground(file, {
+            blob = await removeBackground(input, {
               ...baseConfig,
               model: "isnet",
               ...(useGpu ? { device: "gpu" as const } : {}),
@@ -114,18 +217,25 @@ const BackgroundRemover = () => {
           } catch (gpuError) {
             if (!useGpu) throw gpuError;
             console.warn("GPU推論に失敗、CPUで再試行:", gpuError);
-            blob = await removeBackground(file, {
+            blob = await removeBackground(input, {
               ...baseConfig,
               model: "isnet",
             });
           }
         } else {
-          blob = await removeBackground(file, baseConfig);
+          blob = await removeBackground(input, baseConfig);
         }
 
         setResultBlob(blob);
         setResultUrl(URL.createObjectURL(blob));
         setStatus("done");
+
+        // 履歴を更新（差し替え指定があればそれを、なければ新規追加）
+        if (replaceId != null) {
+          updateHistoryEntry(replaceId, blob, useHighQuality);
+        } else {
+          pushHistory(file, blob, useHighQuality, label);
+        }
       } catch (error) {
         console.error("背景除去エラー:", error);
         setErrorMessage(
@@ -134,7 +244,7 @@ const BackgroundRemover = () => {
         setStatus("error");
       }
     },
-    [originalUrl, resultUrl, clearParts, highQuality]
+    [originalUrl, resultUrl, clearParts, highQuality, pushHistory, updateHistoryEntry]
   );
 
   // 高精度モードの切り替え。画像を読み込み済みなら新しい設定で自動再処理する
@@ -142,7 +252,10 @@ const BackgroundRemover = () => {
     const next = !highQuality;
     setHighQuality(next);
     if (lastInputRef.current && status !== "processing") {
-      processFile(lastInputRef.current, next);
+      processFile(lastInputRef.current, {
+        useHighQuality: next,
+        replaceId: currentId ?? undefined,
+      });
     }
   };
 
@@ -161,20 +274,21 @@ const BackgroundRemover = () => {
   // アンマウント時にオブジェクトURLを解放
   useEffect(() => {
     return () => {
-      if (originalUrl) URL.revokeObjectURL(originalUrl);
-      if (resultUrl) URL.revokeObjectURL(resultUrl);
+      const { original, result } = bigUrlsRef.current;
+      if (original) URL.revokeObjectURL(original);
+      if (result) URL.revokeObjectURL(result);
+      historyRef.current.forEach((entry) => URL.revokeObjectURL(entry.thumbUrl));
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // 範囲選択からの切り出し結果を受け取る
   const handleRegionExtract = (blob: Blob, useAi: boolean) => {
     if (useAi) {
       // 選択範囲だけをAIで切り抜く
-      processFile(blob);
+      processFile(blob, { label: "範囲をAI切り抜き" });
       return;
     }
-    // そのまま結果として表示する
+    // AIを使わずそのまま切り出し。元画像は変えず、結果として表示する
     if (resultUrl) URL.revokeObjectURL(resultUrl);
     setResultBlob(blob);
     setResultUrl(URL.createObjectURL(blob));
@@ -182,6 +296,35 @@ const BackgroundRemover = () => {
     setCopied(false);
     clearParts();
     setStatus("done");
+    if (lastInputRef.current) {
+      pushHistory(lastInputRef.current, blob, highQuality, "範囲を切り出し");
+    }
+  };
+
+  // 履歴のサムネイルをクリックしてその状態に戻す
+  const restoreHistory = (entry: HistoryEntry) => {
+    if (status === "processing" || entry.id === currentId) return;
+
+    if (originalUrl) URL.revokeObjectURL(originalUrl);
+    if (resultUrl) URL.revokeObjectURL(resultUrl);
+    clearParts();
+    setCopied(false);
+    setErrorMessage("");
+
+    lastInputRef.current = entry.originalBlob;
+    setOriginalUrl(URL.createObjectURL(entry.originalBlob));
+    setHighQuality(entry.highQuality);
+
+    if (entry.resultBlob) {
+      setResultBlob(entry.resultBlob);
+      setResultUrl(URL.createObjectURL(entry.resultBlob));
+      setStatus("done");
+    } else {
+      setResultBlob(null);
+      setResultUrl("");
+      setStatus("idle");
+    }
+    setCurrentId(entry.id);
   };
 
   // 切り抜き結果を繋がっていない被写体ごとに分割する
@@ -293,6 +436,43 @@ const BackgroundRemover = () => {
           }}
         />
       </div>
+
+      {/* 履歴 */}
+      {history.length > 0 && (
+        <div className="mb-6">
+          <p className="mb-2 text-sm font-medium text-gray-700">
+            履歴（クリックでその状態に戻せます）
+          </p>
+          <div className="flex gap-3 overflow-x-auto pb-2">
+            {history.map((entry, index) => (
+              <button
+                key={entry.id}
+                type="button"
+                onClick={() => restoreHistory(entry)}
+                disabled={status === "processing"}
+                className={`shrink-0 w-24 rounded-lg border overflow-hidden transition-colors disabled:opacity-50 ${
+                  entry.id === currentId
+                    ? "border-blue-500 ring-2 ring-blue-300"
+                    : "border-gray-300 hover:border-gray-400"
+                }`}
+                title={`${index + 1}. ${entry.label}`}
+              >
+                <div className={`${CHECKER_BG} h-20 flex items-center justify-center`}>
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={entry.thumbUrl}
+                    alt={entry.label}
+                    className="max-h-20 max-w-full object-contain"
+                  />
+                </div>
+                <div className="px-1 py-1 bg-gray-50 border-t border-gray-200 text-[10px] text-gray-600 truncate">
+                  {index + 1}. {entry.label}
+                </div>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* 高精度モードトグル */}
       <div className="mb-6 flex items-center gap-3">
