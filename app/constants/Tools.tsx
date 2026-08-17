@@ -5,6 +5,7 @@ import JstConverter from "@/features/JstConverter/JstConverter";
 import MakingArray from "@/features/MakingArray/MakingArray";
 import MakingDictArray from "@/features/MakingDictArray/MakingDictArray";
 import QueryParams from "@/features/QueryParams/QueryParams";
+import VideoAudioRemover from "@/features/VideoAudioRemover/VideoAudioRemover";
 
 export const ToolList: ToolSetWithComponent[] = [
   {
@@ -48,5 +49,11 @@ export const ToolList: ToolSetWithComponent[] = [
     title: "Googleマップ写真抽出",
     content: "場所URLから写真の画像URLを取り出してダウンロードします",
     Component: GoogleMapPhoto,
+  },
+  {
+    id: 8,
+    title: "動画の音声除去",
+    content: "動画から音声トラックを無劣化で取り除きます",
+    Component: VideoAudioRemover,
   },
 ];
