@@ -17,20 +17,18 @@ const TextInput = ({
 }: Props) => {
   return (
     <div className="mb-6">
-      <label
-        htmlFor={id}
-        className="block mb-2 text-sm font-medium text-gray-900"
-      >
+      <label htmlFor={id} className="field-label">
         {textAreaLabel}
       </label>
       <input
         id={id}
-        type="search"
+        type="text"
+        aria-label={textAreaLabel || placeholder}
         placeholder={placeholder}
         value={value}
         disabled={disabled}
         readOnly={!onChange}
-        className="block w-full p-4 text-gray-900 border border-gray-300 rounded-lg bg-gray-50 sm:text-md focus:ring-blue-500 focus:border-blue-500"
+        className="field-input"
         onChange={(e) => onChange?.(e.target.value)}
       />
     </div>

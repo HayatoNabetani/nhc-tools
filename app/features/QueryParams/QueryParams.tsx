@@ -88,7 +88,7 @@ const QueryParams = () => {
     setNewUrl(
       `${urlObject.protocol}//${urlObject.host}${
         urlObject.pathname
-      }?${params.toString()}`
+      }?${params.toString()}`,
     );
   };
 
@@ -98,7 +98,7 @@ const QueryParams = () => {
         <div>
           <TextInput
             id="inputUrl"
-            textAreaLabel=""
+            textAreaLabel="解析するURL"
             placeholder="ここにURLを入力"
             value={url}
             onChange={handleSetUrl}
@@ -140,7 +140,7 @@ const QueryParams = () => {
         <div>
           <TextInput
             id="inputNewUrl"
-            textAreaLabel=""
+            textAreaLabel="作成したURL"
             placeholder="作成後のURL"
             value={newUrl}
             disabled={true}

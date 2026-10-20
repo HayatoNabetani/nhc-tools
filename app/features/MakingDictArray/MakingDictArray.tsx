@@ -1,10 +1,7 @@
 import ButtonOnlyIcon from "@/components/elements/Button/ButtonOnlyIcon";
 import TextArea from "@/components/elements/TextArea/TextArea";
 import { useState } from "react";
-import {
-  KeyValueInputs,
-  transformToObjectsWithCycle,
-} from "./utils/convert";
+import { KeyValueInputs, transformToObjectsWithCycle } from "./utils/convert";
 
 import KeyValueCard from "./components/KeyValueCard";
 import Button from "@/components/elements/Button/Button";
@@ -20,7 +17,7 @@ const MakingDictArray = () => {
   const createResult = (newKeyValueInputs: KeyValueInputs) => {
     setKeyValueInputs(newKeyValueInputs);
     setArrayResult(
-      createArrayString(transformToObjectsWithCycle(newKeyValueInputs))
+      createArrayString(transformToObjectsWithCycle(newKeyValueInputs)),
     );
   };
 
@@ -40,7 +37,7 @@ const MakingDictArray = () => {
     <div className="w-full">
       {/* 整形部分 */}
       <div>
-        <p>
+        <p className="dictionary-output-label">
           配列(コピー用) <ButtonOnlyIcon type="copy" value={arrayResult} />
         </p>
         <div>
@@ -55,7 +52,7 @@ const MakingDictArray = () => {
         <div>
           <Button text="追加" handleClick={handleAddKeyValue} />
         </div>
-        <div className="flex">
+        <div className="dictionary-grid">
           {Object.entries(keyValueInputs).map(([key, values], index) => (
             <KeyValueCard
               key={index}

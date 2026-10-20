@@ -12,7 +12,11 @@ const createTupleString = (items: string[]) =>
 // スプレッドシートに列で貼り付けられる形にする
 const createSpreadsheetString = (items: string[]) => items.join("\n");
 
-const buildOutputs = (items: string[], idPrefix: string, labelPrefix: string) => [
+const buildOutputs = (
+  items: string[],
+  idPrefix: string,
+  labelPrefix: string,
+) => [
   {
     id: `${idPrefix}ArrayResultTextArea`,
     label: `${labelPrefix}配列(コピー用)`,
@@ -43,7 +47,7 @@ const MakingArray = () => {
         .split(SEPARATOR_REGEX)
         .map((item) => item.trim())
         .filter(Boolean),
-    [arrayInput]
+    [arrayInput],
   );
 
   // 重複要素を検出
@@ -66,7 +70,7 @@ const MakingArray = () => {
   const outputs = useMemo(() => buildOutputs(items, "", ""), [items]);
   const uniqueOutputs = useMemo(
     () => buildOutputs(uniqueItems, "unique", "重複削除後の"),
-    [uniqueItems]
+    [uniqueItems],
   );
 
   return (
@@ -84,25 +88,25 @@ const MakingArray = () => {
       </div>
 
       {/* 整形部分 */}
-      <div className="flex justify-between w-full mb-10">
-        <div className="flex-1 pr-1">
-          <p>ここに文字列を入力(対応区切り文字,)</p>
+      <div className="array-grid">
+        <div>
+          <p>テキストを入力（カンマ・改行などで区切り）</p>
           <TextArea
             id="arrayTextArea"
-            textAreaLabel="arrayTextArea"
+            textAreaLabel="変換するテキスト"
             placeholder="ここに文字列を入力"
             value={arrayInput}
             onChange={setArrayInput}
           />
         </div>
         {outputs.map((output) => (
-          <div key={output.id} className="flex-1 pl-1">
+          <div key={output.id}>
             <p>
               {output.label} <ButtonOnlyIcon type="copy" value={output.value} />
             </p>
             <TextArea
               id={output.id}
-              textAreaLabel={output.id}
+              textAreaLabel={output.label}
               placeholder={output.placeholder}
               value={output.value}
               disabled={true}
@@ -130,19 +134,16 @@ const MakingArray = () => {
             </div>
           </div>
 
-          <div className="flex justify-between w-full">
-            {uniqueOutputs.map((output, index) => (
-              <div
-                key={output.id}
-                className={`flex-1 ${index === 0 ? "pr-1" : "pl-1"}`}
-              >
+          <div className="array-grid array-grid-unique">
+            {uniqueOutputs.map((output) => (
+              <div key={output.id}>
                 <p>
                   {output.label}{" "}
                   <ButtonOnlyIcon type="copy" value={output.value} />
                 </p>
                 <TextArea
                   id={output.id}
-                  textAreaLabel={output.id}
+                  textAreaLabel={output.label}
                   placeholder={`ここに${output.label.replace("(コピー用)", "")}出力`}
                   value={output.value}
                   disabled={true}

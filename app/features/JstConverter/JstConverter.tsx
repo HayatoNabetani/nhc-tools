@@ -5,9 +5,9 @@ const JstConverter = () => {
   const { timeInput, jstResult, handleJstConvert } = useConvert();
 
   return (
-    <div className="flex items-center justify-center w-full">
-      <div className="w-1/2">
-        <div className="overflow-auto px-4 py-2">
+    <div className="jst-layout">
+      <div className="min-w-0">
+        <div>
           <TextInput
             id="time"
             textAreaLabel="時間に関する文字列"
@@ -18,8 +18,11 @@ const JstConverter = () => {
           />
         </div>
       </div>
-      <div className="w-1/2 px-4 py-2">
-        日本時間: <span className="ml-2 text-2xl font-bold">{jstResult}</span>
+      <div className="jst-result">
+        <p>日本時間（JST）</p>
+        <output aria-live="polite">
+          {jstResult || "変換した日時がここに表示されます"}
+        </output>
       </div>
     </div>
   );

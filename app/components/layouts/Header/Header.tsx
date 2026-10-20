@@ -1,139 +1,158 @@
 "use client";
 
-import { DefaultHeader } from "@/constants/Header";
-import { ToolList } from "@/constants/Tools";
-import userState from "@/recoil/header/atom";
+import { Grid2X2, Search, Star, X, ArrowUpRight } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
-import { useEffect, useState, useRef } from "react";
-import { useRecoilState } from "recoil";
+import { useEffect, useRef, useState } from "react";
+import { usePathname } from "next/navigation";
+import ToolIcon from "@/components/elements/ToolIcon/ToolIcon";
+import { searchTools, ToolCatalog } from "@/constants/ToolCatalog";
+import { useFavorites } from "@/hooks/useFavorites";
 
-const Header = () => {
-  const [headerObject, setHeaderObject] = useRecoilState(userState);
+export default function Header() {
   const pathname = usePathname();
-  const router = useRouter();
-  const [searchQuery, setSearchQuery] = useState("");
+  const [query, setQuery] = useState("");
   const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const { favoriteIds } = useFavorites();
   const searchRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+  const toggleRef = useRef<HTMLButtonElement>(null);
+  const filteredTools = searchTools(query);
 
-  // リロードや戻る操作の際にタイトルが表示中のページとずれないようにする
   useEffect(() => {
-    if (pathname.startsWith("/tool/")) {
-      const id = Number(pathname.split("/")[2]);
-      const targetTool = ToolList.find((t) => t.id === id);
-      setHeaderObject(targetTool ?? DefaultHeader);
-    } else {
-      setHeaderObject(DefaultHeader);
-    }
-  }, [pathname, setHeaderObject]);
-
-  // 検索結果をフィルタリング
-  const lowerQuery = searchQuery.toLowerCase();
-  const filteredTools = ToolList.filter(
-    (tool) =>
-      tool.title.toLowerCase().includes(lowerQuery) ||
-      tool.content.toLowerCase().includes(lowerQuery)
-  );
-
-  // ツール選択時のハンドラー
-  const handleToolSelect = (tool: ToolSetWithComponent) => {
-    setHeaderObject(tool);
-    router.push(`/tool/${tool.id}`);
-    setSearchQuery("");
     setIsSearchOpen(false);
-  };
+    setQuery("");
+  }, [pathname]);
 
-  // 検索入力のハンドラー
-  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setSearchQuery(e.target.value);
-    setIsSearchOpen(e.target.value.length > 0);
-  };
-
-  // クリック外側でドロップダウンを閉じる
   useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
+    if (isSearchOpen) inputRef.current?.focus();
+  }, [isSearchOpen]);
+
+  useEffect(() => {
+    const handleOutsideClick = (event: MouseEvent) => {
       if (
         searchRef.current &&
         !searchRef.current.contains(event.target as Node)
-      ) {
+      )
         setIsSearchOpen(false);
-      }
     };
-
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
-    };
+    document.addEventListener("mousedown", handleOutsideClick);
+    return () => document.removeEventListener("mousedown", handleOutsideClick);
   }, []);
 
   return (
-    <header>
-      <div className="py-2 lg:max-w-5xl lg:w-full mx-auto flex items-center justify-between">
-        <div className="flex items-center">
-          <div>
-            <Link href="/" onClick={() => setHeaderObject(DefaultHeader)}>
-              <Image src="/logo/tool.png" alt="logo" width={120} height={120} />
-            </Link>
-          </div>
-          <div className="">
-            <h1 className="font-bold text-2xl">{headerObject?.title}</h1>
-            <p className="text-sm">{headerObject?.content}</p>
-          </div>
-        </div>
-        <div className="relative" ref={searchRef}>
-          <div className="relative">
-            <input
-              type="text"
-              placeholder="ツールを検索..."
-              value={searchQuery}
-              onChange={handleSearchChange}
-              className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent w-64"
-            />
-            <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
-              <svg
-                className="w-4 h-4 text-gray-400"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-                />
-              </svg>
-            </div>
-          </div>
-
-          {/* 検索結果ドロップダウン */}
+    <header className="site-header">
+      <div className="header-inner">
+        <Link href="/" className="brand" aria-label="NHC Tools ホーム">
+          <Image
+            src="/logo/tool.png"
+            alt=""
+            width={64}
+            height={64}
+            className="brand-logo"
+            priority
+          />
+          <span className="brand-name">
+            NHC<span>Tools</span>
+          </span>
+        </Link>
+        <nav className="header-nav" aria-label="メインナビゲーション">
+          <Link
+            href="/#tools"
+            className={pathname === "/" ? "nav-link is-current" : "nav-link"}
+          >
+            <Grid2X2 size={16} aria-hidden="true" />
+            ツール一覧
+          </Link>
+          <Link href="/#favorites" className="nav-link">
+            <Star size={17} aria-hidden="true" />
+            お気に入り
+            {favoriteIds.length > 0 && (
+              <span className="nav-count">{favoriteIds.length}</span>
+            )}
+          </Link>
+        </nav>
+        <div
+          className="header-search"
+          ref={searchRef}
+          onKeyDown={(event) => {
+            if (event.key === "Escape") {
+              setIsSearchOpen(false);
+              toggleRef.current?.focus();
+            }
+          }}
+        >
+          <button
+            ref={toggleRef}
+            type="button"
+            className="header-search-toggle"
+            aria-label={
+              isSearchOpen ? "ツール検索を閉じる" : "ツール検索を開く"
+            }
+            aria-expanded={isSearchOpen}
+            aria-controls="header-search-panel"
+            onClick={() => setIsSearchOpen(!isSearchOpen)}
+          >
+            {isSearchOpen ? (
+              <X size={20} aria-hidden="true" />
+            ) : (
+              <Search size={20} aria-hidden="true" />
+            )}
+          </button>
           {isSearchOpen && (
-            <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-300 rounded-lg shadow-lg z-50 max-h-60 overflow-y-auto">
-              {filteredTools.length > 0 ? (
-                filteredTools.map((tool) => (
-                  <div
-                    key={tool.id}
-                    onClick={() => handleToolSelect(tool)}
-                    className="px-4 py-3 hover:bg-gray-100 cursor-pointer border-b border-gray-100 last:border-b-0"
-                  >
-                    <div className="font-medium text-gray-900">
-                      {tool.title}
-                    </div>
-                    <div className="text-sm text-gray-500">{tool.content}</div>
-                  </div>
-                ))
-              ) : (
-                <div className="px-4 py-3 text-gray-500 text-center">
-                  該当するツールが見つかりません
-                </div>
-              )}
+            <div id="header-search-panel" className="header-search-panel">
+              <div className="header-search-field">
+                <Search size={18} aria-hidden="true" />
+                <input
+                  ref={inputRef}
+                  value={query}
+                  onChange={(event) => setQuery(event.target.value)}
+                  type="search"
+                  placeholder="ツール名・キーワードで検索"
+                  aria-label="ツールを検索"
+                  autoComplete="off"
+                />
+              </div>
+              <p className="header-search-caption" role="status">
+                {query.trim()
+                  ? filteredTools.length + "件のツール"
+                  : "すべてのツール"}
+              </p>
+              <div className="header-search-results">
+                {filteredTools.length > 0 ? (
+                  filteredTools.map((tool) => (
+                    <Link
+                      key={tool.id}
+                      href={"/tool/" + tool.id}
+                      className={
+                        "header-search-result tool-theme-" + tool.category
+                      }
+                      onClick={() => {
+                        setIsSearchOpen(false);
+                        setQuery("");
+                      }}
+                    >
+                      <span className="result-icon">
+                        <ToolIcon name={tool.icon} />
+                      </span>
+                      <span>
+                        <strong>{tool.title}</strong>
+                        <small>{tool.content}</small>
+                      </span>
+                      <ArrowUpRight size={15} aria-hidden="true" />
+                    </Link>
+                  ))
+                ) : (
+                  <p className="header-no-results">
+                    該当するツールが見つかりません。
+                  </p>
+                )}
+              </div>
             </div>
           )}
         </div>
+        <span className="header-tool-count">{ToolCatalog.length} TOOLS</span>
       </div>
     </header>
   );
-};
-
-export default Header;
+}

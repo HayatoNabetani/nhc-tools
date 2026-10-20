@@ -16,14 +16,14 @@ const TextArea = ({
   onChange,
 }: Props) => {
   return (
-    <div className="px-4 py-2 bg-white rounded-lg">
+    <div className="field-textarea">
       <label htmlFor={id} className="sr-only">
         {textAreaLabel}
       </label>
       <textarea
         id={id}
         rows={12}
-        className="w-full px-0 text-sm text-gray-900 bg-white border-0"
+        className="w-full"
         placeholder={placeholder}
         value={value}
         disabled={disabled}
