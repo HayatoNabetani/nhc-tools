@@ -6,6 +6,7 @@ import MakingArray from "@/features/MakingArray/MakingArray";
 import MakingDictArray from "@/features/MakingDictArray/MakingDictArray";
 import QueryParams from "@/features/QueryParams/QueryParams";
 import VideoAudioRemover from "@/features/VideoAudioRemover/VideoAudioRemover";
+import MongoQueryConverter from "@/features/MongoQueryConverter/MongoQueryConverter";
 import { ToolCatalog } from "./ToolCatalog";
 
 const toolComponents: Record<number, React.ComponentType> = {
@@ -17,6 +18,7 @@ const toolComponents: Record<number, React.ComponentType> = {
   6: BackgroundRemover,
   7: GoogleMapPhoto,
   8: VideoAudioRemover,
+  9: MongoQueryConverter,
 };
 
 export const ToolList = ToolCatalog.map((tool) => ({

@@ -1,0 +1,233 @@
+.converter {
+  color: var(--ui-ink);
+  font-size: 13px;
+}
+
+.toolbar,
+.actions,
+.editorHeading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.toolbar {
+  flex-wrap: wrap;
+  margin-bottom: 20px;
+}
+
+.toolbar > p {
+  color: #667587;
+  line-height: 1.8;
+}
+
+.actions {
+  flex-wrap: wrap;
+  justify-content: flex-start;
+  gap: 8px;
+}
+
+.button,
+.copyButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 34px;
+  padding: 7px 11px;
+  border: 1px solid var(--ui-line);
+  border-radius: 7px;
+  background: #fff;
+  color: #526278;
+  font-size: 12px;
+}
+
+.button:hover:not(:disabled) {
+  border-color: #6aaba4;
+  color: var(--ui-accent);
+}
+
+.button:disabled,
+.copyButton:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+
+.settings {
+  display: flex;
+  align-items: flex-end;
+  flex-wrap: wrap;
+  gap: 14px 20px;
+  margin-bottom: 24px;
+  padding: 16px;
+  border: 1px solid var(--ui-line);
+  border-radius: 8px;
+  background: #fafbfd;
+}
+
+.settings label {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  color: #667587;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.settings select {
+  min-height: 36px;
+  max-width: 100%;
+  padding: 7px 10px;
+  border: 1px solid #dce3e9;
+  border-radius: 7px;
+  color: var(--ui-ink);
+  background: #fff;
+  font-size: 13px;
+}
+
+.settings p {
+  flex-basis: 100%;
+  color: var(--ui-muted);
+  font-size: 11px;
+  line-height: 1.8;
+}
+
+.editors {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 20px;
+}
+
+.editor {
+  min-width: 0;
+}
+
+.editorHeading {
+  min-height: 34px;
+  margin-bottom: 10px;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.editorHeading > span {
+  color: var(--ui-muted);
+  font-family: monospace;
+  font-size: 11px;
+}
+
+.copyButton {
+  flex-shrink: 0;
+  border-color: #d9eae5;
+  background: #f3f9f6;
+  color: var(--ui-accent);
+}
+
+.copyButton:hover:not(:disabled) {
+  background: #e7f3ef;
+}
+
+.editor textarea {
+  display: block;
+  width: 100%;
+  height: 420px;
+  min-height: 220px;
+  padding: 15px;
+  border: 1px solid #dce3e9;
+  border-radius: 8px;
+  color: #394a60;
+  background: #fafbfd;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 12px;
+  line-height: 1.9;
+  tab-size: 2;
+}
+
+.editor textarea::placeholder {
+  color: #929caa;
+}
+
+.editor textarea[aria-invalid="true"] {
+  border-color: #dc8c8c;
+}
+
+.error,
+.notes {
+  margin-top: 16px;
+  padding: 12px 15px;
+  border-radius: 8px;
+  font-size: 12px;
+  line-height: 1.9;
+  overflow-wrap: anywhere;
+}
+
+.error {
+  color: #a23d3d;
+  background: #fff3f3;
+}
+
+.notes {
+  color: #667587;
+  background: #f3f9f6;
+  list-style-position: inside;
+  list-style-type: disc;
+}
+
+.copyStatus {
+  margin-top: 10px;
+  color: var(--ui-accent);
+  font-size: 12px;
+  line-height: 1.8;
+}
+
+.copyStatus:empty {
+  margin-top: 0;
+}
+
+.help {
+  margin-top: 22px;
+  padding-top: 18px;
+  border-top: 1px solid var(--ui-line);
+  color: var(--ui-muted);
+  font-size: 11px;
+  line-height: 2;
+  overflow-wrap: anywhere;
+}
+
+.help p:first-child {
+  margin-bottom: 5px;
+  color: #526278;
+  font-size: 12px;
+}
+
+.help a {
+  display: inline-block;
+  margin-top: 6px;
+  color: var(--ui-accent);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+@media (max-width: 760px) {
+  .editors {
+    grid-template-columns: 1fr;
+  }
+
+  .editor textarea {
+    height: 300px;
+  }
+
+  .settings {
+    gap: 14px;
+  }
+}
+
+@media (max-width: 480px) {
+  .settings label {
+    width: 100%;
+  }
+
+  .settings select {
+    width: 100%;
+  }
+}

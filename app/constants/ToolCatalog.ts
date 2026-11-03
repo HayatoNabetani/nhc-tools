@@ -9,6 +9,7 @@ export type ToolIconName =
   | "image-minus"
   | "map-pin"
   | "video-off"
+  | "database"
   | "code"
   | "image"
   | "video"
@@ -126,6 +127,25 @@ export const ToolCatalog: ToolDefinition[] = [
     category: "video",
     icon: "video-off",
     keywords: ["動画", "音声", "ミュート", "無音", "video", "audio"],
+  },
+  {
+    id: 9,
+    title: "MongoDBクエリ変換",
+    content:
+      "Pythonの辞書形式のクエリを、MongoDB Compass用のフィルターに変換します。",
+    category: "code",
+    icon: "database",
+    keywords: [
+      "MongoDB",
+      "Compass",
+      "PyMongo",
+      "Python",
+      "クエリ",
+      "フィルター",
+      "dict",
+      "datetime",
+      "ISODate",
+    ],
   },
 ];
 
