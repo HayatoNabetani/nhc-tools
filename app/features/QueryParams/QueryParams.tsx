@@ -13,13 +13,33 @@ import {
 import Button from "@/components/elements/Button/Button";
 
 interface UrlObject {
-  protocol: string;
-  host: string;
-  pathname: string;
-  searchParams: Record<string, string>;
+  baseUrl: string;
+  searchParams: [string, string][];
 }
 
-// 二重エンコードされた値でも表示できるように、失敗したら元の値を返す
+const parseUrl = (inputUrl: string): UrlObject | null => {
+  const trimmedUrl = inputUrl.trim();
+  const normalizedUrl = trimmedUrl.replace(
+    /^\\?\s*(https?)\\?:\/\//i,
+    "$1://",
+  );
+
+  try {
+    const parsedUrl = new URL(normalizedUrl);
+    if (normalizedUrl !== trimmedUrl) {
+      // MarkdownからコピーしたURLのクエリーキー「\_」を戻す
+      parsedUrl.search = parsedUrl.search.replace(/(^\?|&)\\_(?==)/g, "$1_");
+    }
+    return {
+      baseUrl: `${parsedUrl.protocol}//${parsedUrl.host}${parsedUrl.pathname}`,
+      searchParams: Array.from(parsedUrl.searchParams),
+    };
+  } catch {
+    return null;
+  }
+};
+
+// 二重エンコードされたクエリー値も表示時にデコードする
 const safeDecode = (value: string): string => {
   try {
     return decodeURIComponent(value);
@@ -33,63 +53,33 @@ const safeDecode = (value: string): string => {
  * URLからドメインとそれぞれのクエリーパラメータを見やすく表示し、新しいURLも作成できる機能
  */
 const QueryParams = () => {
-  // 分析するURL
   const [url, setUrl] = useState<string>("");
+  const [adoptedIndexes, setAdoptedIndexes] = useState<Set<number> | null>(null);
+  const urlObject = useMemo(() => parseUrl(url), [url]);
 
-  // 分析URLのそれぞれの部分
-  const [urlObject, setUrlObject] = useState<UrlObject | null>(null);
-
-  // クエリーパラメータを自分で選択して、作成するURL
-  const [newUrl, setNewUrl] = useState<string>("");
-
-  // 作成中URLに採用済みのクエリーキー
-  const adoptedKeys = useMemo(() => {
-    if (!newUrl) return new Set<string>();
-    try {
-      return new Set(new URL(newUrl).searchParams.keys());
-    } catch {
-      return new Set<string>();
-    }
-  }, [newUrl]);
+  let newUrl = "";
+  if (urlObject && adoptedIndexes) {
+    const params = new URLSearchParams(
+      Array.from(adoptedIndexes, (index) => urlObject.searchParams[index]),
+    );
+    newUrl = `${urlObject.baseUrl}?${params.toString()}`;
+  }
 
   const handleSetUrl = (inputUrl: string) => {
     setUrl(inputUrl);
-    try {
-      const parsedUrl = new URL(inputUrl);
-      setUrlObject({
-        protocol: parsedUrl.protocol,
-        host: parsedUrl.host,
-        pathname: parsedUrl.pathname,
-        searchParams: Object.fromEntries(parsedUrl.searchParams),
-      });
-    } catch {
-      // 入力途中のURLは解析できないので無視する
-      setUrlObject(null);
-    }
+    setAdoptedIndexes(null);
   };
 
-  // 対象キーを新URLへ採用/不採用でトグルする
-  const toggleQueryParam = (targetKey: string) => {
-    if (!urlObject) return;
-
-    const params = newUrl
-      ? new URL(newUrl).searchParams
-      : new URLSearchParams();
-
-    if (params.has(targetKey)) {
-      params.delete(targetKey);
-    } else {
-      const value = urlObject.searchParams[targetKey];
-      if (value !== undefined) {
-        params.set(targetKey, value);
+  const toggleQueryParam = (index: number) => {
+    setAdoptedIndexes((current) => {
+      const next = new Set(current);
+      if (next.has(index)) {
+        next.delete(index);
+      } else {
+        next.add(index);
       }
-    }
-
-    setNewUrl(
-      `${urlObject.protocol}//${urlObject.host}${
-        urlObject.pathname
-      }?${params.toString()}`,
-    );
+      return next;
+    });
   };
 
   return (
@@ -103,6 +93,11 @@ const QueryParams = () => {
             value={url}
             onChange={handleSetUrl}
           />
+          {url.trim() && !urlObject && (
+            <p className="mb-4 text-sm text-red-700" role="status">
+              解析できるURLを入力してください。
+            </p>
+          )}
         </div>
         <div>
           <Table>
@@ -115,25 +110,27 @@ const QueryParams = () => {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {urlObject &&
-                Object.entries(urlObject.searchParams).map(([key, value]) => (
-                  <TableRow key={key}>
+              {urlObject?.searchParams.map(([key, value], index) => {
+                const decodedValue = safeDecode(value);
+                return (
+                  <TableRow key={index}>
                     <TableCell className="font-medium">
                       {key}
                       <ButtonOnlyIcon type="copy" value={key} />
                     </TableCell>
                     <TableCell>
-                      {safeDecode(value)}
-                      <ButtonOnlyIcon type="copy" value={safeDecode(value)} />
+                      {decodedValue}
+                      <ButtonOnlyIcon type="copy" value={decodedValue} />
                     </TableCell>
                     <TableCell className="text-right">
                       <Button
-                        text={adoptedKeys.has(key) ? "不採用" : "採用!!"}
-                        handleClick={() => toggleQueryParam(key)}
+                        text={adoptedIndexes?.has(index) ? "不採用" : "採用!!"}
+                        handleClick={() => toggleQueryParam(index)}
                       />
                     </TableCell>
                   </TableRow>
-                ))}
+                );
+              })}
             </TableBody>
           </Table>
         </div>

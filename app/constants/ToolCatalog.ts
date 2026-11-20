@@ -147,6 +147,14 @@ export const ToolCatalog: ToolDefinition[] = [
       "ISODate",
     ],
   },
+  {
+    id: 10,
+    title: "URLエンコード・デコード",
+    content: "URLやクエリに使う文字列を、UTF-8のパーセントエンコードに相互変換します。",
+    category: "url",
+    icon: "globe",
+    keywords: ["URL", "クエリ", "パーセント", "encode", "decode", "UTF-8", "変換"],
+  },
 ];
 
 export function searchTools(query: string) {
